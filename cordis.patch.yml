@@ -1,0 +1,10 @@
+# dsh-cyberegg bundle patch.
+#
+# One Host row mounts the package. The Host half serves two loopback routes
+# (WPS 灵犀 and MobileClaw); the browser half reads every other platform through
+# the plugin that already owns it, so no credential of this package is ever
+# handed to the page.
+- insert:
+    - id: cyberegg
+      name: dsh-cyberegg
+      config: {}

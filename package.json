@@ -1,0 +1,56 @@
+{
+  "name": "dsh-cyberegg",
+  "version": "0.1.0",
+  "description": "Cyber Egg (赛博鸡蛋查询): one DeepSeek Harness panel that reads the credit balance and daily check-in status every freebie platform already stores on your machine. Read-only query plus an explicit manual check-in button — no login UI, no stored tokens.",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "credits",
+    "checkin",
+    "check-in",
+    "dashboard",
+    "usage",
+    "freebie",
+    "积分",
+    "签到"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./assets/icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "assets/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "screenshots.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:1015677515/dsh-cyberegg.git"
+  },
+  "homepage": "https://github.com/1015677515/dsh-cyberegg",
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}
