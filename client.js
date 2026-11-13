@@ -633,7 +633,7 @@ window.__ModuleLoader__.load({
      * the derived numbers, never the `wps_sid`.
      */
     async function readLingxi(platform) {
-      const response = await fetch('/plugins/dsh-credit-dashboard/lingxi?action=status', {
+      const response = await fetch('/plugins/dsh-cyberegg/lingxi?action=status', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -693,7 +693,7 @@ window.__ModuleLoader__.load({
      * remaining balance. The Host half parses that log.
      */
     async function readMobileclaw(platform) {
-      const response = await fetch('/plugins/dsh-credit-dashboard/mobileclaw', {
+      const response = await fetch('/plugins/dsh-cyberegg/mobileclaw', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -797,7 +797,7 @@ window.__ModuleLoader__.load({
         }
       }
       if (platform.id === 'lingxi') {
-        const payload = await httpPost('/plugins/dsh-credit-dashboard/lingxi?action=claim', {})
+        const payload = await httpPost('/plugins/dsh-cyberegg/lingxi?action=claim', {})
         const kind = payload && payload.alreadyClaimed === true ? 'already-claimed' : 'claimed'
         return {
           message: (payload && (payload.message || payload.error)) || 'claimed',

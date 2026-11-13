@@ -17,13 +17,13 @@ import { join } from 'node:path'
 
 const LINGXI_HOST = 'https://lingxi.wps.cn'
 const TASK_KEY = 'daily_check_in'
-const ROUTE = '/plugins/dsh-credit-dashboard/lingxi'
+const ROUTE = '/plugins/dsh-cyberegg/lingxi'
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 function dataDir() {
   const home = process.env.DSH_HOME || join(homedir(), '.dsh')
-  return join(home, 'dsh-credit-dashboard')
+  return join(home, 'dsh-cyberegg')
 }
 function sidFile() {
   return join(dataDir(), 'lingxi-sid.json')
@@ -245,7 +245,7 @@ async function handler(req, res) {
  * remaining token balance. Reading that log is enough to answer "did today's
  * 100万 token land", with no credential involved.
  */
-const MC_ROUTE = '/plugins/dsh-credit-dashboard/mobileclaw'
+const MC_ROUTE = '/plugins/dsh-cyberegg/mobileclaw'
 
 function mobileclawLogDir() {
   const local = process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local')
