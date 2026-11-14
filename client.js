@@ -67,6 +67,14 @@ window.__ModuleLoader__.load({
       needLogin: '需登录',
       newsLabel: '赛博鸡蛋资讯',
       newsNote: '不为真实性负责，请谨慎辨别',
+      expiryTitle: '到期预警',
+      expiryNone: '无',
+      expiry3: '3 天内',
+      expiry7: '7 天内',
+      expiry30: '30 天内',
+      expiryShow: '展开明细',
+      expiryHide: '收起',
+      expiringCycle: '周期结束作废',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -124,6 +132,14 @@ window.__ModuleLoader__.load({
       needLogin: 'Needs login',
       newsLabel: 'Cyber Egg info',
       newsNote: 'Not verified — check before you trust it',
+      expiryTitle: 'Expiring soon',
+      expiryNone: 'none',
+      expiry3: 'in 3d',
+      expiry7: 'in 7d',
+      expiry30: 'in 30d',
+      expiryShow: 'Show detail',
+      expiryHide: 'Hide',
+      expiringCycle: 'cycle write-off',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -543,11 +559,23 @@ window.__ModuleLoader__.load({
       }
       const pool = payload && payload.pool ? payload.pool : null
       const list = Array.isArray(pool && pool.accounts) ? pool.accounts : []
+      // `credits.packages` describes the account currently in use only, so its
+      // per-pack expiry dates can only be attached to that row.
+      const currentCredits = payload && payload.credits ? payload.credits : null
+      const currentPackages = currentCredits && Array.isArray(currentCredits.packages)
+        ? currentCredits.packages
+            .map((entry) => ({
+              name: typeof entry.packageName === 'string' ? entry.packageName : '',
+              remaining: firstNum(entry.remain),
+              expireMs: firstNum(entry.expiresAtMs),
+            }))
+            .filter((entry) => entry.remaining !== undefined)
+        : []
       const accounts = list.map((row) => ({
         accountId: String(row.accountId || row.id || row.accountName || 'workbuddy'),
         nickname: String(row.accountName || row.accountId || 'WorkBuddy'),
         credit: typeof row.credits === 'number' ? row.credits : undefined,
-        packages: [],
+        packages: row.current === true ? currentPackages : [],
         expiry: formatDate(row.nearestExpiryMs),
         checkedIn: typeof row.checkedInToday === 'boolean' ? row.checkedInToday : undefined,
         actionRequired: false,
@@ -574,10 +602,12 @@ window.__ModuleLoader__.load({
       const credits = snapshot && snapshot.credits ? snapshot.credits : null
       const welfare = snapshot && snapshot.welfare ? snapshot.welfare : null
       const remain = credits && credits.total ? firstNum(credits.total.remain) : undefined
+      const expiring = credits && credits.total ? firstNum(credits.total.expiring) : undefined
       return {
         accountId: String(accountId),
         nickname: String(name || accountId),
         credit: remain,
+        expiring,
         packages: [],
         expiry: credits && credits.periodEnd ? String(credits.periodEnd).slice(0, 10) : '',
         checkedIn: welfare ? welfare.claimedToday === true : undefined,
@@ -911,6 +941,26 @@ window.__ModuleLoader__.load({
         border: '1px solid var(--dsw-alias-border-l2)',
         color: 'var(--dsw-alias-brand-primary)', display: 'inline-block',
       },
+      expiryBar: {
+        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+        margin: '0 0 18px', padding: '8px 12px', borderRadius: 10,
+        background: 'var(--dsw-alias-bg-layer-1)',
+        border: '1px solid var(--dsw-alias-border-l1)',
+      },
+      expiryCounts: {
+        fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)',
+        fontVariantNumeric: 'tabular-nums',
+      },
+      expiryList: {
+        flexBasis: '100%', marginTop: 6, paddingTop: 6,
+        borderTop: '1px solid var(--dsw-alias-border-l1)',
+      },
+      expiryRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 2px', fontSize: 12 },
+      expiryDate: {
+        minWidth: 84, color: 'var(--dsw-alias-label-secondary)',
+        fontVariantNumeric: 'tabular-nums',
+      },
+      expiryWho: { minWidth: 140 },
     }
 
     function formatCredit(value) {
@@ -1328,6 +1378,44 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function ExpiryBar(props) {
+      const { t, expiry } = props
+      const [open, setOpen] = useState(false)
+      const sumOf = (list) => list.reduce((acc, entry) => acc + entry.remaining, 0)
+      const cell = (list, label) =>
+        label + ' ' + (list.length > 0 ? formatCredit(sumOf(list)) : t('expiryNone'))
+      const summary = [
+        cell(expiry.d3, t('expiry3')),
+        cell(expiry.d7, t('expiry7')),
+        cell(expiry.d30, t('expiry30')),
+      ].join('  ·  ')
+      return h('div', { style: S.expiryBar },
+        h('span', { style: S.newsLabel }, t('expiryTitle')),
+        h('span', { style: S.expiryCounts }, summary),
+        h('span', { style: S.spacer }),
+        expiry.items.length > 0
+          ? h('button', {
+              style: S.iconBtn,
+              onClick: () => setOpen(!open),
+            }, open ? t('expiryHide') : t('expiryShow'))
+          : null,
+        expiry.items.length > 0 && open
+          ? h('div', { style: S.expiryList },
+              expiry.items.map((entry, index) => h('div', {
+                key: entry.platform + ':' + entry.name + ':' + entry.at + ':' + index,
+                style: S.expiryRow,
+              },
+                h('span', { style: S.expiryDate }, formatDate(entry.at)),
+                h('span', { style: S.expiryWho }, entry.platform + (entry.account ? ' · ' + entry.account : '')),
+                h('span', { style: S.spacer }),
+                h('span', { style: S.muted }, entry.name),
+                h('span', { style: S.credit }, formatCredit(entry.remaining)),
+              )),
+            )
+          : null,
+      )
+    }
+
     function DashboardPage(props) {
       const { t, backToConversation } = props
       const dash = useDashboard()
@@ -1388,6 +1476,50 @@ window.__ModuleLoader__.load({
         return { credit, already, claimable }
       }, [order, platforms, auto, ledger, prefs.hidden])
 
+      /**
+       * Expiry radar: every dated credit pack across visible platforms, plus a
+       * plan-cycle write-off (CodeArts reports one lump sum, not packs).
+       */
+      const expiry = useMemo(() => {
+        const DAY = 86400000
+        const now = Date.now()
+        const items = []
+        for (const id of order) {
+          if (prefs.hidden[id] === true) continue
+          const state = platforms[id]
+          if (!state) continue
+          const seed = PLATFORM_SEED.find((entry) => entry.id === id)
+          const label = seed ? seed.label : id
+          for (const row of state.accounts || []) {
+            for (const pkg of row.packages || []) {
+              if (typeof pkg.expireMs !== 'number' || pkg.expireMs <= now) continue
+              items.push({
+                platform: label,
+                account: row.nickname,
+                name: pkg.name,
+                remaining: pkg.remaining,
+                at: pkg.expireMs,
+              })
+            }
+            if (typeof row.expiring === 'number' && row.expiring > 0 && row.expiry) {
+              const at = Date.parse(row.expiry + 'T23:59:59+08:00')
+              if (Number.isFinite(at) && at > now) {
+                items.push({
+                  platform: label,
+                  account: row.nickname,
+                  name: t('expiringCycle'),
+                  remaining: row.expiring,
+                  at,
+                })
+              }
+            }
+          }
+        }
+        items.sort((left, right) => left.at - right.at)
+        const within = (days) => items.filter((entry) => entry.at <= now + days * DAY)
+        return { items, d3: within(3), d7: within(7), d30: within(30) }
+      }, [order, platforms, prefs.hidden, t])
+
       const refreshAll = useCallback(() => {
         refreshAuto()
         for (const id of order) refresh(id, false, true)
@@ -1440,6 +1572,7 @@ window.__ModuleLoader__.load({
             h('div', { style: S.statValue }, DEFAULT_INTERVAL / HOUR + 'h'),
           ),
         ),
+        h(ExpiryBar, { t, expiry }),
         order.filter((id) => prefs.hidden[id] !== true).map((id) => {
           const seed = PLATFORM_SEED.find((entry) => entry.id === id)
           if (!seed) return null
