@@ -70,11 +70,13 @@ window.__ModuleLoader__.load({
       expiryTitle: '到期预警',
       expiryNone: '无',
       expiry3: '3 天内',
-      expiry7: '7 天内',
-      expiry30: '30 天内',
+      expiryNearest: '最近到期（不在 3 天内，仅供参考）',
+      nearestExpiryOnly: '价格明细需切账号',
       expiryShow: '展开明细',
       expiryHide: '收起',
-      expiringCycle: '周期结束作废',
+      expiringCycle: '周期末总共作废',
+      detail: '积分详情',
+      detailHint: '打开官网积分明细页',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -135,11 +137,13 @@ window.__ModuleLoader__.load({
       expiryTitle: 'Expiring soon',
       expiryNone: 'none',
       expiry3: 'in 3d',
-      expiry7: 'in 7d',
-      expiry30: 'in 30d',
+      expiryNearest: 'Nearest expiry (outside 3 days, reference only)',
+      nearestExpiryOnly: 'per-pack detail needs account switch',
       expiryShow: 'Show detail',
       expiryHide: 'Hide',
-      expiringCycle: 'cycle write-off',
+      expiringCycle: 'written off at cycle end',
+      detail: 'Detail',
+      detailHint: 'Open the official credit detail page',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -166,7 +170,7 @@ window.__ModuleLoader__.load({
       { id: 'workbuddy', label: 'WorkBuddy', kind: 'http' },
       { id: 'trae', label: 'Trae (CN)', provider: 'trae', kind: 'pack' },
       { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', refreshHourUtc8: 10 },
-      { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http' },
+      { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn' },
       { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', refreshHourUtc8: 10 },
       { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', claim: 'link', link: 'https://xiaohuanxiong.com/work/home' },
@@ -961,6 +965,11 @@ window.__ModuleLoader__.load({
         fontVariantNumeric: 'tabular-nums',
       },
       expiryWho: { minWidth: 140 },
+      expiryNearestLabel: {
+        marginTop: 6, paddingTop: 6, fontSize: 11,
+        color: 'var(--dsw-alias-label-secondary)',
+        borderTop: '1px dashed var(--dsw-alias-border-l1)',
+      },
     }
 
     function formatCredit(value) {
@@ -1236,6 +1245,16 @@ window.__ModuleLoader__.load({
             title: t('hide'),
             onClick: (event) => { event.stopPropagation(); onHide(seed.id) },
           }, t('hideShort')),
+          seed.detailUrl
+            ? h('a', {
+                href: seed.detailUrl,
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                style: { ...S.iconBtn, padding: '1px 6px', fontSize: 11, lineHeight: '16px', textDecoration: 'none', display: 'inline-block' },
+                title: t('detailHint'),
+                onClick: (event) => event.stopPropagation(),
+              }, t('detail'))
+            : null,
           h('span', { style: S.pill },
             activeAccounts.length > 1
               ? activeAccounts.length + ' ' + t('accountsUnit')
@@ -1381,35 +1400,48 @@ window.__ModuleLoader__.load({
     function ExpiryBar(props) {
       const { t, expiry } = props
       const [open, setOpen] = useState(false)
-      const sumOf = (list) => list.reduce((acc, entry) => acc + entry.remaining, 0)
-      const cell = (list, label) =>
-        label + ' ' + (list.length > 0 ? formatCredit(sumOf(list)) : t('expiryNone'))
-      const summary = [
-        cell(expiry.d3, t('expiry3')),
-        cell(expiry.d7, t('expiry7')),
-        cell(expiry.d30, t('expiry30')),
-      ].join('  ·  ')
+      const sumOf = (list) => list.reduce((acc, entry) => acc + (entry.remaining || 0), 0)
+      const hasAny = expiry.items.length > 0 || expiry.cycle.length > 0 || expiry.nearest.length > 0
+      const head = []
+      head.push(t('expiry3') + ' ' + (expiry.items.length > 0 ? formatCredit(sumOf(expiry.items)) : t('expiryNone')))
+      for (const entry of expiry.cycle) {
+        head.push(entry.platform + ' ' + t('expiringCycle') + ' ' + formatCredit(entry.remaining)
+          + '（' + formatDate(entry.at) + '）')
+      }
       return h('div', { style: S.expiryBar },
         h('span', { style: S.newsLabel }, t('expiryTitle')),
-        h('span', { style: S.expiryCounts }, summary),
+        h('span', { style: S.expiryCounts }, head.join('  ·  ')),
         h('span', { style: S.spacer }),
-        expiry.items.length > 0
-          ? h('button', {
-              style: S.iconBtn,
-              onClick: () => setOpen(!open),
-            }, open ? t('expiryHide') : t('expiryShow'))
+        hasAny
+          ? h('button', { style: S.iconBtn, onClick: () => setOpen(!open) },
+              open ? t('expiryHide') : t('expiryShow'))
           : null,
-        expiry.items.length > 0 && open
+        hasAny && open
           ? h('div', { style: S.expiryList },
-              expiry.items.map((entry, index) => h('div', {
-                key: entry.platform + ':' + entry.name + ':' + entry.at + ':' + index,
-                style: S.expiryRow,
+              expiry.items.length > 0
+                ? expiry.items.map((entry, index) => h('div', {
+                    key: 'in' + index,
+                    style: S.expiryRow,
+                  },
+                    h('span', { style: S.expiryDate }, formatDate(entry.at)),
+                    h('span', { style: S.expiryWho }, entry.platform + (entry.account ? ' · ' + entry.account : '')),
+                    h('span', { style: S.spacer }),
+                    h('span', { style: S.muted }, entry.name),
+                    h('span', { style: S.credit }, formatCredit(entry.remaining)),
+                  ))
+                : h('div', { style: S.expiryRow }, h('span', { style: S.muted }, t('expiry3') + ' ' + t('expiryNone'))),
+              expiry.nearest.length > 0
+                ? h('div', { style: S.expiryNearestLabel }, t('expiryNearest'))
+                : null,
+              expiry.nearest.slice(0, 10).map((entry, index) => h('div', {
+                key: 'nr' + index,
+                style: { ...S.expiryRow, opacity: 0.72 },
               },
                 h('span', { style: S.expiryDate }, formatDate(entry.at)),
                 h('span', { style: S.expiryWho }, entry.platform + (entry.account ? ' · ' + entry.account : '')),
                 h('span', { style: S.spacer }),
-                h('span', { style: S.muted }, entry.name),
-                h('span', { style: S.credit }, formatCredit(entry.remaining)),
+                h('span', { style: S.muted }, entry.hasDetail ? '' : t('nearestExpiryOnly')),
+                h('span', { style: S.credit }, entry.remaining === undefined ? '—' : formatCredit(entry.remaining)),
               )),
             )
           : null,
@@ -1483,7 +1515,10 @@ window.__ModuleLoader__.load({
       const expiry = useMemo(() => {
         const DAY = 86400000
         const now = Date.now()
+        const horizon = now + 3 * DAY
         const items = []
+        const cycle = []
+        const nearest = []
         for (const id of order) {
           if (prefs.hidden[id] === true) continue
           const state = platforms[id]
@@ -1491,8 +1526,11 @@ window.__ModuleLoader__.load({
           const seed = PLATFORM_SEED.find((entry) => entry.id === id)
           const label = seed ? seed.label : id
           for (const row of state.accounts || []) {
-            for (const pkg of row.packages || []) {
-              if (typeof pkg.expireMs !== 'number' || pkg.expireMs <= now) continue
+            const packs = (row.packages || [])
+              .filter((pkg) => typeof pkg.expireMs === 'number' && pkg.expireMs > now)
+              .sort((left, right) => left.expireMs - right.expireMs)
+            for (const pkg of packs) {
+              if (pkg.expireMs > horizon) continue
               items.push({
                 platform: label,
                 account: row.nickname,
@@ -1501,23 +1539,39 @@ window.__ModuleLoader__.load({
                 at: pkg.expireMs,
               })
             }
-            if (typeof row.expiring === 'number' && row.expiring > 0 && row.expiry) {
+            const writesOff = typeof row.expiring === 'number' && row.expiring > 0 && row.expiry
+            // Plan-cycle write-off: one lump sum with the owner-reported date, so
+            // it is shown on the bar itself rather than inside the 3-day list.
+            if (writesOff) {
               const at = Date.parse(row.expiry + 'T23:59:59+08:00')
               if (Number.isFinite(at) && at > now) {
-                items.push({
-                  platform: label,
-                  account: row.nickname,
-                  name: t('expiringCycle'),
-                  remaining: row.expiring,
-                  at,
-                })
+                cycle.push({ platform: label, account: row.nickname, remaining: row.expiring, at })
               }
+            }
+            // Nearest expiry for this account, however far away — the only thing
+            // available when the upstream hands out no per-pack detail.
+            let earliest = packs.length > 0 ? packs[0].expireMs : undefined
+            if (earliest === undefined && row.expiry) {
+              const at = Date.parse(row.expiry + 'T00:00:00+08:00')
+              if (Number.isFinite(at) && at > now) earliest = at
+            }
+            if (earliest !== undefined) {
+              nearest.push({
+                platform: label,
+                account: row.nickname,
+                at: earliest,
+                hasDetail: packs.length > 0,
+                remaining: packs.length > 0
+                  ? packs.reduce((sum, pkg) => sum + (pkg.remaining || 0), 0)
+                  : undefined,
+              })
             }
           }
         }
         items.sort((left, right) => left.at - right.at)
-        const within = (days) => items.filter((entry) => entry.at <= now + days * DAY)
-        return { items, d3: within(3), d7: within(7), d30: within(30) }
+        nearest.sort((left, right) => left.at - right.at)
+        cycle.sort((left, right) => left.at - right.at)
+        return { items, cycle, nearest }
       }, [order, platforms, prefs.hidden, t])
 
       const refreshAll = useCallback(() => {
