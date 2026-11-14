@@ -884,10 +884,26 @@ window.__ModuleLoader__.load({
         overflowY: 'auto',
         overscrollBehavior: 'contain',
         boxSizing: 'border-box',
+        position: 'relative',
         color: 'var(--dsw-alias-label-primary)',
         fontSize: 13,
         lineHeight: 1.5,
       },
+      /** Decorative mascot: never intercepts a click, never covers the text. */
+      mascotLayer: {
+        position: 'fixed',
+        right: 0,
+        bottom: 0,
+        height: '66vh',
+        maxHeight: 760,
+        pointerEvents: 'none',
+        userSelect: 'none',
+        zIndex: 0,
+        opacity: 0.22,
+        transform: 'translateX(8%)',
+      },
+      /** Everything interactive rides above the mascot layer. */
+      contentLayer: { position: 'relative', zIndex: 1 },
       headRow: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
       title: { fontSize: 20, fontWeight: 600, margin: 0, letterSpacing: '-0.01em' },
       subtitle: { margin: '4px 0 0', color: 'var(--dsw-alias-label-secondary)', fontSize: 12.5 },
@@ -1491,6 +1507,21 @@ window.__ModuleLoader__.load({
       const { platforms, order, prefs, intervalOf, refresh, claim, move, toggleCollapsed, setIntervalFor, toggleHidden, auto, refreshAuto, ledger, history } = dash
       const didInit = useRef(false)
       const dragFrom = useRef(null)
+      const pageRef = useRef(null)
+      // Room for the mascot only when the panel is genuinely wider than the
+      // 980px content column — otherwise the artwork would sit under the rows.
+      const [roomForMascot, setRoomForMascot] = useState(false)
+      const [mascotFailed, setMascotFailed] = useState(false)
+
+      useEffect(() => {
+        const node = pageRef.current
+        if (!node || typeof ResizeObserver === 'undefined') return undefined
+        const measure = () => setRoomForMascot(node.clientWidth >= 1240)
+        measure()
+        const observer = new ResizeObserver(measure)
+        observer.observe(node)
+        return () => observer.disconnect()
+      }, [])
 
       useEffect(() => {
         if (didInit.current) return
@@ -1634,7 +1665,18 @@ window.__ModuleLoader__.load({
         for (const id of order) refresh(id, false, true)
       }, [order, refresh, refreshAuto])
 
-      return h('div', { style: S.page },
+      return h('div', { style: S.page, ref: pageRef },
+        roomForMascot && !mascotFailed
+          ? h('img', {
+              src: '/plugins/dsh-cyberegg/mascot',
+              alt: '',
+              'aria-hidden': true,
+              draggable: false,
+              style: S.mascotLayer,
+              onError: () => setMascotFailed(true),
+            })
+          : null,
+        h('div', { style: S.contentLayer },
         h('div', { style: S.headRow },
           h('div', null,
             h('h1', { style: S.title }, t('title')),
@@ -1727,6 +1769,7 @@ window.__ModuleLoader__.load({
             }),
           )
         })(),
+        ),
       )
     }
 

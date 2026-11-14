@@ -3,3 +3,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 _probe/
+
+# Private artwork: the panel mascot is the author's own material and must not
+# be published. The Host half serves it when present; marketplace installs 404.
+assets/mascot.webp
+assets/mascot.png

@@ -13,7 +13,8 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const LINGXI_HOST = 'https://lingxi.wps.cn'
 const TASK_KEY = 'daily_check_in'
@@ -336,6 +337,41 @@ async function mobileclawHandler(req, res) {
   }
 }
 
+/* ── 面板底图 ──────────────────────────────────────────────────────────────
+ * The mascot is the user's own artwork, kept OUT of git on purpose (see
+ * .gitignore). It is served from the plugin directory so the page can show it
+ * without knowing any absolute path, and a missing file simply answers 404 —
+ * the panel then renders without it, which is the normal case for anyone who
+ * installs the plugin from the marketplace.
+ */
+const MASCOT_ROUTE = '/plugins/dsh-cyberegg/mascot'
+const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url))
+const MASCOT_FILE = join(PLUGIN_DIR, 'assets', 'mascot.webp')
+
+function mascotHandler(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { 'content-type': 'text/plain; charset=utf-8' })
+    return res.end('method not allowed')
+  }
+  if (!existsSync(MASCOT_FILE)) {
+    res.writeHead(404, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
+    return res.end('{"error":"no-mascot"}')
+  }
+  let bytes
+  try {
+    bytes = readFileSync(MASCOT_FILE)
+  } catch (error) {
+    res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' })
+    return res.end(JSON.stringify({ error: String((error && error.message) || error) }))
+  }
+  res.writeHead(200, {
+    'content-type': 'image/webp',
+    'content-length': bytes.length,
+    'cache-control': 'public, max-age=86400',
+  })
+  return res.end(req.method === 'HEAD' ? undefined : bytes)
+}
+
 export function apply(ctx) {
   ctx.inject(['webServer'], (host) => {
     const server = host.webServer || (host.get && host.get('webServer'))
@@ -343,9 +379,11 @@ export function apply(ctx) {
     host.effect(() => {
       const offLingxi = server.register({ kind: 'exact', path: ROUTE, handler })
       const offMobileclaw = server.register({ kind: 'exact', path: MC_ROUTE, handler: mobileclawHandler })
+      const offMascot = server.register({ kind: 'exact', path: MASCOT_ROUTE, handler: mascotHandler })
       return () => {
         offLingxi()
         offMobileclaw()
+        offMascot()
       }
     }, 'credit-dashboard: routes')
   })
