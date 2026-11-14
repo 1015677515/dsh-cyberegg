@@ -338,15 +338,14 @@ async function mobileclawHandler(req, res) {
 }
 
 /* ── 面板底图 ──────────────────────────────────────────────────────────────
- * The mascot is the user's own artwork, kept OUT of git on purpose (see
- * .gitignore). It is served from the plugin directory so the page can show it
- * without knowing any absolute path, and a missing file simply answers 404 —
- * the panel then renders without it, which is the normal case for anyone who
- * installs the plugin from the marketplace.
+ * The mascot is the author's own artwork. It ships with the package so the
+ * panel looks the same everywhere; the route serves it from the plugin
+ * directory, and a missing file answers 404 — the panel then renders without
+ * it and no other feature is affected.
  */
 const MASCOT_ROUTE = '/plugins/dsh-cyberegg/mascot'
 const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url))
-const MASCOT_FILE = join(PLUGIN_DIR, 'assets', 'mascot.webp')
+const MASCOT_FILE = join(PLUGIN_DIR, 'assets', 'cyberegg-mascot.webp')
 
 function mascotHandler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {

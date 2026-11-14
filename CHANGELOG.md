@@ -14,6 +14,7 @@
 - 数据来源全部借用已装插件的只读路由：`dsh-our-free-model`（channel-pack RPC）、`dsh-connect-workbuddy`、`dsh-codearts`
 - 自带两个 Host 侧读取器：WPS 灵犀（Cookies SQLite / 手填 sid）与 MobileClaw（App 日志）
 - 不引入登录界面；页面只拿到数字，拿不到任何 token
+- 面板右下角装饰底图（`assets/cyberegg-mascot.webp`），`pointer-events: none` 且只占内容列右侧空白，不挡文字、不拦截点击；文件缺失时自动不渲染
 
 ### 数据核对记录（2026-11-14）
 

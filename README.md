@@ -131,13 +131,22 @@ curl -X POST "http://127.0.0.1:<DSH端口>/plugins/dsh-cyberegg/lingxi?action=si
 纯 JS，无构建步骤。改 `client.js` 刷新页面生效；改 `index.js`（Host 半身）需要重载插件或重启宿主。
 
 ```
-index.js           Host 半身：灵犀读 Cookies + 调 lingxi；MobileClaw 读日志
-client.js          浏览器半身：平台表、读取、签到、偏好
+index.js           Host 半身：灵犀读 Cookies + 调 lingxi；MobileClaw 读日志；面板底图路由
+client.js          浏览器半身：平台表、读取、签到、偏好、到期预警
 cordis.patch.yml   bundle 挂载行
 locale/*.json      文案
 assets/icon.svg    宿主插件列表用的图标
+assets/icon-*.png  市场卡片图标（市场只收 GitHub 托管的位图）
+assets/cyberegg-mascot.webp  面板右下角的装饰底图（可选，缺失时面板正常显示）
 screenshots.json   市场详情页截图清单
 ```
+
+### 关于底图
+
+面板右下角那张装饰图由 Host 的 `/plugins/dsh-cyberegg/mascot` 路由提供，前端以
+`pointer-events: none` + `opacity: 0.5` 渲染在内容层下方，宽度上限是内容列右侧的空白
+（`calc((100vw - 1000px) / 2)`），因此不会压住任何账号行，也不会拦截点击。
+文件缺失时路由返回 404，页面自动不渲染——不影响其它任何功能。
 
 ---
 
