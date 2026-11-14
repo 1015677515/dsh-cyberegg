@@ -28,10 +28,12 @@
 ## 依赖：装了才有数，没装就空着
 
 **本插件是聚合层，不是数据源。** 下面这些插件是它的数据来源，**缺任何一个只是少几行，不会报错**。
+缺哪个插件，面板顶部会给出**一条**汇总提示（不是每行一条），附带安装命令与仓库地址。
 
 | 平台 | 数据来自 | 推荐 |
 |---|---|---|
-| Loomy · MiniMax Code · Trae · Qoder 国际 · Qoder 中国 · Raccoon (商汤) | [`dsh-our-free-model`](https://github.com/Ebony-Vinyl/dsh-our-free-model) 的 channel-pack RPC | ✅ 强烈推荐 |
+| Loomy · MiniMax Code · Qoder 国际 · Qoder 中国 · Raccoon (商汤) | [`dsh-our-free-model`](https://github.com/Ebony-Vinyl/dsh-our-free-model) 的 channel-pack RPC | ✅ 强烈推荐 |
+| **Trae（CN）** | [`dsh-connect-trae`](https://github.com/dingminhua/dsh-connect-trae) 的 `/usage` 文档 | ✅ 推荐（比 channel-pack 多签到状态与厂商包名） |
 | WorkBuddy（腾讯 CodeBuddy） | [`dsh-connect-workbuddy`](https://github.com/dingminhua/dsh-connect-workbuddy) | ✅ 推荐 |
 | CodeArts（华为云） | [`dsh-codearts`](https://github.com/elegant01/dsh-codearts) | 可选 |
 | WPS 灵犀 | 本插件自带（读灵犀桌面端 Cookies，或手填 `wps_sid`） | 可选 |
@@ -50,7 +52,7 @@
 | 平台 | 剩余积分 | 今日是否签到 | 手动签到 | 核对 | 备注 |
 |---|:---:|:---:|:---:|:---:|---|
 | WorkBuddy | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 逐包 | 签到 100/天，30 天有效 |
-| Trae（CN） | ✅ | ✅ | ✅ | ✅ 逐包 | 签到 100/天，30 天有效 |
+| Trae（CN） | ✅ | ✅ **账号级** | ✅ | ✅ 逐包 | 签到 100/天，30 天有效；读 `dsh-connect-trae` 的 usage |
 | Qoder 国际 / 中国 | ✅ 汇总 | ✅ | ✅ | ⚠️ 仅汇总 | 每日 10:00 刷新；逐包明细接口不提供，走官网 |
 | Loomy | ✅ 永久池 + 每日池 | ✅ | ✅ 每日额度初始化 | ✅ 实测 | 每日池 5000，登录后重置 |
 | Raccoon (商汤) | ✅ 奖励池 + 每日池 | ✅ 每日池已发放 | — 走网页 | ✅ 流水归纳 | 每日 300，发放后 7 天有效 |
