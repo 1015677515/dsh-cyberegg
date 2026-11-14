@@ -42,7 +42,7 @@
   "expiryNone": "none",
   "expiry3": "in 3d",
   "expiryNearest": "Nearest expiry (outside 3 days, reference only)",
-  "nearestExpiryOnly": "per-pack detail needs account switch",
+  "nearestExpiryOnly": "amount unknown",
   "expiryShow": "Show detail",
   "expiryHide": "Hide",
   "expiringCycle": "written off at cycle end",

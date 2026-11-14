@@ -71,7 +71,7 @@ window.__ModuleLoader__.load({
       expiryNone: '无',
       expiry3: '3 天内',
       expiryNearest: '最近到期（不在 3 天内，仅供参考）',
-      nearestExpiryOnly: '价格明细需切账号',
+      nearestExpiryOnly: '该日金额未知',
       expiryShow: '展开明细',
       expiryHide: '收起',
       expiringCycle: '周期末总共作废',
@@ -138,7 +138,7 @@ window.__ModuleLoader__.load({
       expiryNone: 'none',
       expiry3: 'in 3d',
       expiryNearest: 'Nearest expiry (outside 3 days, reference only)',
-      nearestExpiryOnly: 'per-pack detail needs account switch',
+      nearestExpiryOnly: 'amount unknown',
       expiryShow: 'Show detail',
       expiryHide: 'Hide',
       expiringCycle: 'written off at cycle end',
@@ -1415,7 +1415,7 @@ window.__ModuleLoader__.load({
       const sumOf = (list) => list.reduce((acc, entry) => acc + (entry.remaining || 0), 0)
       const hasAny = expiry.items.length > 0 || expiry.cycle.length > 0 || expiry.nearest.length > 0
       const head = []
-      head.push(t('expiry3') + ' ' + (expiry.items.length > 0 ? formatCredit(sumOf(expiry.items)) : t('expiryNone')))
+      head.push(t('expiry3') + ' ' + (expiry.items.length > 0 ? formatCredit(sumOf(expiry.items)) : '0'))
       for (const entry of expiry.cycle) {
         head.push(entry.platform + ' ' + t('expiringCycle') + ' ' + formatCredit(entry.remaining)
           + '（' + formatDate(entry.at) + '）')
@@ -1441,7 +1441,7 @@ window.__ModuleLoader__.load({
                     h('span', { style: S.muted }, entry.name),
                     h('span', { style: S.credit }, formatCredit(entry.remaining)),
                   ))
-                : h('div', { style: S.expiryRow }, h('span', { style: S.muted }, t('expiry3') + ' ' + t('expiryNone'))),
+                : h('div', { style: S.expiryRow }, h('span', { style: S.muted }, t('expiry3') + ' 0')),
               expiry.nearest.length > 0
                 ? h('div', { style: S.expiryNearestLabel }, t('expiryNearest'))
                 : null,
@@ -1538,45 +1538,63 @@ window.__ModuleLoader__.load({
           const seed = PLATFORM_SEED.find((entry) => entry.id === id)
           const label = seed ? seed.label : id
           for (const row of state.accounts || []) {
-            const packs = (row.packages || [])
-              .filter((pkg) => typeof pkg.expireMs === 'number' && pkg.expireMs > now)
-              .sort((left, right) => left.expireMs - right.expireMs)
-            for (const pkg of packs) {
-              if (pkg.expireMs > horizon) continue
+            // Group this account's live packs by expiry day: a row's "expires on
+            // X" means the packs that actually die on X, never the whole balance.
+            const byDay = new Map()
+            for (const pkg of row.packages || []) {
+              if (typeof pkg.expireMs !== 'number' || pkg.expireMs <= now) continue
+              const key = formatDate(pkg.expireMs)
+              if (!key) continue
+              const bucket = byDay.get(key) || { at: pkg.expireMs, remaining: 0, names: [] }
+              bucket.remaining += pkg.remaining || 0
+              if (pkg.name) bucket.names.push(pkg.name)
+              if (pkg.expireMs < bucket.at) bucket.at = pkg.expireMs
+              byDay.set(key, bucket)
+            }
+            const days = [...byDay.entries()]
+              .map(([date, bucket]) => ({ date, ...bucket }))
+              .sort((left, right) => left.at - right.at)
+            for (const day of days) {
+              if (day.at > horizon) continue
               items.push({
                 platform: label,
                 account: row.nickname,
-                name: pkg.name,
-                remaining: pkg.remaining,
-                at: pkg.expireMs,
+                name: day.names.length > 0 ? [...new Set(day.names)].join(' / ') : '',
+                remaining: day.remaining,
+                at: day.at,
               })
             }
             const writesOff = typeof row.expiring === 'number' && row.expiring > 0 && row.expiry
-            // Plan-cycle write-off: one lump sum with the owner-reported date, so
-            // it is shown on the bar itself rather than inside the 3-day list.
             if (writesOff) {
               const at = Date.parse(row.expiry + 'T23:59:59+08:00')
               if (Number.isFinite(at) && at > now) {
                 cycle.push({ platform: label, account: row.nickname, remaining: row.expiring, at })
               }
             }
-            // Nearest expiry for this account, however far away — the only thing
-            // available when the upstream hands out no per-pack detail.
-            let earliest = packs.length > 0 ? packs[0].expireMs : undefined
-            if (earliest === undefined && row.expiry) {
-              const at = Date.parse(row.expiry + 'T00:00:00+08:00')
-              if (Number.isFinite(at) && at > now) earliest = at
-            }
-            if (earliest !== undefined) {
+            // Next expiry day for this account, with THAT day's amount. When the
+            // upstream gives no per-pack detail, fall back to the owner-reported
+            // nearest date and leave the amount unknown — but a cycle write-off
+            // already has a real figure, so it must not be reported as "unknown".
+            if (days.length > 0) {
+              const first = days[0]
               nearest.push({
                 platform: label,
                 account: row.nickname,
-                at: earliest,
-                hasDetail: packs.length > 0,
-                remaining: packs.length > 0
-                  ? packs.reduce((sum, pkg) => sum + (pkg.remaining || 0), 0)
-                  : undefined,
+                at: first.at,
+                remaining: first.remaining,
+                hasDetail: true,
               })
+            } else if (!writesOff && row.expiry) {
+              const at = Date.parse(row.expiry + 'T00:00:00+08:00')
+              if (Number.isFinite(at) && at > now) {
+                nearest.push({
+                  platform: label,
+                  account: row.nickname,
+                  at,
+                  remaining: undefined,
+                  hasDetail: false,
+                })
+              }
             }
           }
         }
