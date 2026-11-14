@@ -6,7 +6,7 @@
  *
  *   channel-pack (dsh-our-free-model)  POST /api/channel-pack   (JSON-RPC)
  *   workbuddy                          GET  /plugins/dsh-connect-workbuddy/account-credits
- *   trae                               GET  /plugins/dsh-connect-trae/account-credits
+ *   trae                               GET  /plugins/dsh-connect-trae/usage
  *   codearts                           GET  /api/codearts/status
  *
  * No credential is read here, no login surface is introduced, and nothing is
@@ -196,7 +196,7 @@ window.__ModuleLoader__.load({
       { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteMinimax' },
       { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', note: 'noteLingxi' },
       { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', note: 'noteWorkbuddy' },
-      { id: 'trae', label: 'Trae (CN)', provider: 'trae', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteTrae' },
+      { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', note: 'noteTrae' },
       { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
       { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch', note: 'noteMobileclaw' },
@@ -230,6 +230,10 @@ window.__ModuleLoader__.load({
       'dsh-codearts': {
         repo: 'https://github.com/elegant01/dsh-codearts',
         install: 'dsh plugin --profile desktop add github:elegant01/dsh-codearts',
+      },
+      'dsh-connect-trae': {
+        repo: 'https://github.com/dingminhua/dsh-connect-trae',
+        install: 'dsh plugin --profile desktop add github:dingminhua/dsh-connect-trae',
       },
     }
 
@@ -830,12 +834,87 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * Trae: read the Trae connector's own usage document instead of the
+     * channel-pack balance.
+     *
+     * `/plugins/dsh-connect-trae/usage` is strictly better here: it carries the
+     * vendor's display names (新用户福利 / 签到奖励 / 每月登录赠送), a per-pack
+     * `expiresAtMs`, AND the account-level check-in state — the channel-pack
+     * balance has none of the last two. It also lives under `/plugins/`, so it
+     * needs no launch token to read.
+     */
+    async function readTrae(platform) {
+      const response = await fetch('/plugins/dsh-connect-trae/usage', {
+        headers: { Accept: 'application/json' },
+      })
+      let payload = null
+      try { payload = await response.json() } catch { /* non-JSON body */ }
+      if (!response.ok) {
+        if (response.status === 404) {
+          return { accounts: [], error: '', missingDependency: 'dsh-connect-trae', raw: payload }
+        }
+        return { accounts: [], error: 'HTTP ' + response.status, raw: payload }
+      }
+      if (payload && payload.status && payload.status !== 'signed-in') {
+        return {
+          accounts: [{
+            accountId: 'trae',
+            nickname: 'Trae (CN)',
+            credit: undefined,
+            packages: [],
+            expiry: '',
+            checkedIn: undefined,
+            needLogin: true,
+            actionRequired: false,
+            active: true,
+            statusKnown: false,
+            error: 'Trae 未登录：在 Trae 客户端登录一次',
+          }],
+          error: '',
+          raw: payload,
+        }
+      }
+      const credits = payload && payload.credits ? payload.credits : null
+      const packList = credits && Array.isArray(credits.accounts) ? credits.accounts : []
+      const packages = packList
+        .map((entry) => ({
+          name: typeof entry.displayDesc === 'string' ? entry.displayDesc : '',
+          remaining: firstNum(entry.remain),
+          expireMs: firstNum(entry.expiresAtMs),
+        }))
+        .filter((entry) => entry.remaining !== undefined)
+      const checkin = payload && payload.checkin ? payload.checkin : null
+      const accounts = Array.isArray(payload && payload.accounts) ? payload.accounts : []
+      return {
+        accounts: [{
+          accountId: 'trae',
+          nickname: accounts.length > 0 && accounts[0].accountName
+            ? String(accounts[0].accountName)
+            : 'Trae (CN)',
+          credit: credits ? firstNum(credits.generalAvailable, credits.available) : undefined,
+          packages,
+          expiry: '',
+          checkedIn: checkin ? checkin.checkedIn === true : undefined,
+          streakDays: undefined,
+          actionRequired: false,
+          active: true,
+          statusKnown: Boolean(checkin),
+          current: true,
+          error: '',
+        }],
+        error: '',
+        raw: payload,
+      }
+    }
+
     async function readPlatform(platform, force) {
       if (platform.kind === 'pack') return readPackPlatform(platform)
       if (platform.id === 'workbuddy') return readWorkbuddy(platform)
       if (platform.id === 'codearts') return readCodearts(platform, force)
       if (platform.id === 'lingxi') return readLingxi(platform)
       if (platform.id === 'mobileclaw') return readMobileclaw(platform)
+      if (platform.id === 'trae') return readTrae(platform)
       return { accounts: [], error: 'unsupported' }
     }
 
@@ -904,6 +983,19 @@ window.__ModuleLoader__.load({
         return {
           message: (payload && (payload.message || payload.error)) || 'claimed',
           rows: account ? [{ accountId: account.accountId, kind }] : [],
+        }
+      }
+      if (platform.id === 'trae') {
+        // The Trae connector claims one account per call and answers
+        // `{ claimed, alreadyCheckedIn }`; no batch form exists.
+        const payload = await httpPost(
+          '/plugins/dsh-connect-trae/checkin?accountId=' + encodeURIComponent(account ? account.accountId : ''),
+          {},
+        )
+        const already = payload && (payload.alreadyCheckedIn === true || payload.claimed === false)
+        return {
+          message: (payload && (payload.message || payload.error)) || (already ? 'already-claimed' : 'claimed'),
+          rows: account ? [{ accountId: account.accountId, kind: already ? 'already-claimed' : 'claimed' }] : [],
         }
       }
       throw new Error('no claim route')
@@ -1782,7 +1874,7 @@ window.__ModuleLoader__.load({
         h('div', { style: S.headRow },
           h('div', null,
             h('h1', { style: S.title }, t('title')),
-            h('p', { style: S.subtitle }, t('subtitle') + '  ·  v4'),
+            h('p', { style: S.subtitle }, t('subtitle') + '  ·  v5')
           ),
           h('div', { style: { display: 'flex', gap: 8 } },
             h('button', { style: S.iconBtn, onClick: refreshAll }, t('refreshAll')),
