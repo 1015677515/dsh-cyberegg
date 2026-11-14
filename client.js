@@ -87,6 +87,10 @@ window.__ModuleLoader__.load({
       noteCodearts: '签到 100/天 · 套餐周期 30 天，周期末作废',
       noteMobileclaw: '打卡礼 100 万 token/天 · 30 天有效',
       noteRaccoon: '每日 300（需网页签到）· 发放后 7 天有效',
+      missingTitle: '未安装',
+      missingBody: '这行数据来自该插件，装上之后才会出数：',
+      missingRepo: '查看仓库',
+      missingProfileHint: '（把 desktop 换成你的 profile 名，多数情况就是它）',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -164,6 +168,10 @@ window.__ModuleLoader__.load({
       noteCodearts: 'check-in 100/day · 30-day plan cycle, written off at cycle end',
       noteMobileclaw: 'daily token gift 1M/day · valid 30 days',
       noteRaccoon: 'daily 300 (claim on the web page) · valid 7 days',
+      missingTitle: 'Not installed:',
+      missingBody: 'These rows read through that plugin — install it to see numbers:',
+      missingRepo: 'Repository',
+      missingProfileHint: '(replace desktop with your profile name if different)',
       linkFreeegg: 'freeegg.top',
       linkPencil: 'pencilai',
       linkYangmao: 'yangmao.ai',
@@ -184,16 +192,16 @@ window.__ModuleLoader__.load({
 
     /** Platforms in default display order (most productive freebies first). */
     const PLATFORM_SEED = [
-      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', dailyQuota: 5000, dailyNote: 'expiresToday', note: 'noteLoomy' },
-      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', note: 'noteMinimax' },
+      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', dailyQuota: 5000, dailyNote: 'expiresToday', note: 'noteLoomy' },
+      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteMinimax' },
       { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', note: 'noteLingxi' },
-      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', note: 'noteWorkbuddy' },
-      { id: 'trae', label: 'Trae (CN)', provider: 'trae', kind: 'pack', note: 'noteTrae' },
-      { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
-      { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
+      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', note: 'noteWorkbuddy' },
+      { id: 'trae', label: 'Trae (CN)', provider: 'trae', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteTrae' },
+      { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
+      { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
       { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch', note: 'noteMobileclaw' },
-      { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
-      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', note: 'noteRaccoon' },
+      { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
+      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', note: 'noteRaccoon' },
     ]
 
     const INTERVALS = [
@@ -206,6 +214,24 @@ window.__ModuleLoader__.load({
       { ms: 0, label: 'manual' },
     ]
     const DEFAULT_INTERVAL = 2 * HOUR
+
+    /** Third-party plugins this panel reads through. A 404 from their route means
+     * "not installed", which is a different answer from "installed but broken" —
+     * the two must never be reported with the same sentence. */
+    const DEPENDENCIES = {
+      'dsh-our-free-model': {
+        repo: 'https://github.com/Ebony-Vinyl/dsh-our-free-model',
+        install: 'dsh plugin --profile desktop add github:Ebony-Vinyl/dsh-our-free-model',
+      },
+      'dsh-connect-workbuddy': {
+        repo: 'https://github.com/dingminhua/dsh-connect-workbuddy',
+        install: 'dsh plugin --profile desktop add github:dingminhua/dsh-connect-workbuddy',
+      },
+      'dsh-codearts': {
+        repo: 'https://github.com/elegant01/dsh-codearts',
+        install: 'dsh plugin --profile desktop add github:elegant01/dsh-codearts',
+      },
+    }
 
     // ── preferences ───────────────────────────────────────────────────────
     function loadPrefs() {
@@ -571,6 +597,10 @@ window.__ModuleLoader__.load({
           error: row.error || '',
         }
       })
+      // A 404 from the panel route means the owning package is not installed at all.
+      if (/HTTP 404/.test(balanceError)) {
+        return { accounts: [], error: '', missingDependency: 'dsh-our-free-model' }
+      }
       return { accounts, error: balanceError }
     }
 
@@ -591,6 +621,9 @@ window.__ModuleLoader__.load({
       let payload = null
       try { payload = await response.json() } catch { /* non-JSON body */ }
       if (!response.ok) {
+        if (response.status === 404) {
+          return { accounts: [], error: '', missingDependency: 'dsh-connect-workbuddy', raw: payload }
+        }
         return { accounts: [], error: 'HTTP ' + response.status, raw: payload }
       }
       const pool = payload && payload.pool ? payload.pool : null
@@ -663,6 +696,9 @@ window.__ModuleLoader__.load({
       let payload = null
       try { payload = await response.json() } catch { /* non-JSON body */ }
       if (!response.ok) {
+        if (response.status === 404) {
+          return { accounts: [], error: '', missingDependency: 'dsh-codearts', raw: payload }
+        }
         const why = payload && (payload.error || payload.message) ? String(payload.error || payload.message) : ''
         return { accounts: [], error: 'HTTP ' + response.status + (why ? ' ' + why : ''), raw: payload }
       }
@@ -1025,6 +1061,26 @@ window.__ModuleLoader__.load({
         padding: '0 12px 8px 34px', fontSize: 11,
         color: 'var(--dsw-alias-label-secondary)', opacity: 0.8,
       },
+      missingCard: {
+        margin: '0 0 12px', padding: '10px 12px', borderRadius: 10,
+        background: 'var(--dsw-alias-bg-layer-2)',
+        border: '1px solid var(--dsw-alias-state-warn-primary)',
+      },
+      missingHead: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 },
+      missingTitle: {
+        fontSize: 12.5, fontWeight: 600,
+        color: 'var(--dsw-alias-state-warn-primary)',
+      },
+      missingBody: { fontSize: 12, marginBottom: 6, lineHeight: 1.6 },
+      missingCmd: { marginBottom: 6 },
+      missingCode: {
+        display: 'inline-block', padding: '3px 8px', borderRadius: 6, fontSize: 11.5,
+        background: 'var(--dsw-alias-bg-layer-1)',
+        border: '1px solid var(--dsw-alias-border-l1)',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        wordBreak: 'break-all',
+      },
+      missingFoot: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
       expiryNearestLabel: {
         marginTop: 6, paddingTop: 6, fontSize: 11,
         color: 'var(--dsw-alias-label-secondary)',
@@ -1060,7 +1116,7 @@ window.__ModuleLoader__.load({
       const [platforms, setPlatforms] = useState(() => {
         const map = {}
         for (const seed of PLATFORM_SEED) {
-          map[seed.id] = { status: 'idle', accounts: [], error: '', at: 0, claiming: false, notice: '', diag: null }
+          map[seed.id] = { status: 'idle', accounts: [], error: '', missingDependency: '', at: 0, claiming: false, notice: '', diag: null }
         }
         return map
       })
@@ -1112,6 +1168,7 @@ window.__ModuleLoader__.load({
               status: 'ok',
               accounts: result.accounts || [],
               error: result.error || '',
+              missingDependency: result.missingDependency || '',
               at: Date.now(),
               diag: showRaw === true ? result.raw || null : current[id].diag,
             },
@@ -1458,6 +1515,40 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /**
+     * One consolidated notice per missing package, never one per platform: the
+     * same 404 would otherwise repeat six times for dsh-our-free-model.
+     */
+    function MissingDeps(props) {
+      const { t, groups } = props
+      if (!groups || groups.length === 0) return null
+      return h('div', null,
+        groups.map((group) => {
+          const dep = DEPENDENCIES[group.dep] || { repo: '', install: '' }
+          return h('div', { key: group.dep, style: S.missingCard },
+            h('div', { style: S.missingHead },
+              h('span', { style: S.missingTitle }, t('missingTitle') + ' ' + group.dep),
+            ),
+            h('div', { style: S.missingBody },
+              t('missingBody') + ' ' + group.platforms.join(' / ')),
+            h('div', { style: S.missingCmd },
+              h('code', { style: S.missingCode }, dep.install)),
+            h('div', { style: S.missingFoot },
+              dep.repo
+                ? h('a', {
+                    href: dep.repo,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    style: S.newsLink,
+                  }, t('missingRepo'))
+                : null,
+              h('span', { style: S.newsNote }, t('missingProfileHint')),
+            ),
+          )
+        }),
+      )
+    }
+
     function ExpiryBar(props) {
       const { t, expiry } = props
       const [open, setOpen] = useState(false)
@@ -1654,6 +1745,23 @@ window.__ModuleLoader__.load({
         return { items, cycle, nearest }
       }, [order, platforms, prefs.hidden, t])
 
+      const missingGroups = useMemo(() => {
+        const byDep = new Map()
+        for (const id of order) {
+          if (prefs.hidden[id] === true) continue
+          const state = platforms[id]
+          if (!state || !state.missingDependency) continue
+          const seed = PLATFORM_SEED.find((entry) => entry.id === id)
+          const label = seed ? seed.label : id
+          const list = byDep.get(state.missingDependency) || []
+          list.push(label)
+          byDep.set(state.missingDependency, list)
+        }
+        return [...byDep.entries()]
+          .map(([dep, platforms]) => ({ dep, platforms }))
+          .sort((left, right) => left.dep.localeCompare(right.dep))
+      }, [order, platforms, prefs.hidden])
+
       const refreshAll = useCallback(() => {
         refreshAuto()
         for (const id of order) refresh(id, false, true)
@@ -1718,6 +1826,7 @@ window.__ModuleLoader__.load({
           ),
         ),
         h(ExpiryBar, { t, expiry }),
+        h(MissingDeps, { t, groups: missingGroups }),
         order.filter((id) => prefs.hidden[id] !== true).map((id) => {
           const seed = PLATFORM_SEED.find((entry) => entry.id === id)
           if (!seed) return null
