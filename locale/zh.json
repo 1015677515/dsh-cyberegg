@@ -33,6 +33,7 @@
   "autoPending": "今日未发放",
   "autoAppLaunch": "每日自动发放 · 需每天启动 App",
   "expiresToday": "（当日过期）",
+  "valid7d": "（发放后 7 天有效）",
   "streak": "连续",
   "dayUnit": "天",
   "needLogin": "需登录",

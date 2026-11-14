@@ -62,6 +62,7 @@ window.__ModuleLoader__.load({
       autoPending: '今日未发放',
       autoAppLaunch: '每日自动发放 · 需每天启动 App',
       expiresToday: '（当日过期）',
+      valid7d: '（发放后 7 天有效）',
       streak: '连续',
       dayUnit: '天',
       needLogin: '需登录',
@@ -129,6 +130,7 @@ window.__ModuleLoader__.load({
       autoPending: 'Not granted yet',
       autoAppLaunch: 'Granted daily · needs the app launched each day',
       expiresToday: ' (expires today)',
+      valid7d: ' (valid 7 days)',
       streak: 'streak',
       dayUnit: 'd',
       needLogin: 'Needs login',
@@ -164,7 +166,7 @@ window.__ModuleLoader__.load({
 
     /** Platforms in default display order (most productive freebies first). */
     const PLATFORM_SEED = [
-      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', dailyQuota: 5000 },
+      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', dailyQuota: 5000, dailyNote: 'expiresToday' },
       { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack' },
       { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi' },
       { id: 'workbuddy', label: 'WorkBuddy', kind: 'http' },
@@ -173,7 +175,7 @@ window.__ModuleLoader__.load({
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn' },
       { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage' },
-      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', claim: 'link', link: 'https://xiaohuanxiong.com/work/home' },
+      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d' },
     ]
 
     const INTERVALS = [
@@ -1362,7 +1364,7 @@ window.__ModuleLoader__.load({
       // expiry date, which is what the row is asked to show.
       if (others.length === 1) parts.push(formatPool(others[0]))
       else if (others.length > 1 && dailyPack !== undefined) parts.push(formatPool(others[0]))
-      if (dailyPack) parts.push(formatPool(dailyPack) + t('expiresToday'))
+      if (dailyPack) parts.push(formatPool(dailyPack) + t(seed.dailyNote || 'expiresToday'))
       if (typeof row.streakDays === 'number' && row.streakDays > 0) parts.push(t('streak') + ' ' + row.streakDays + ' ' + t('dayUnit'))
       if (row.expiry) parts.push(t('expiry') + ' ' + row.expiry)
       const expiryText = parts.length > 0

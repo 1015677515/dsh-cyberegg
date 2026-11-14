@@ -33,6 +33,7 @@
   "autoPending": "Not granted yet",
   "autoAppLaunch": "Granted daily · needs the app launched each day",
   "expiresToday": " (expires today)",
+  "valid7d": " (valid 7 days)",
   "streak": "streak",
   "dayUnit": "d",
   "needLogin": "Needs login",
