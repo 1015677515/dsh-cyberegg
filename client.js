@@ -908,7 +908,7 @@ window.__ModuleLoader__.load({
         pointerEvents: 'none',
         userSelect: 'none',
         zIndex: 0,
-        opacity: 0.3,
+        opacity: 0.5,
       },
       /** Everything interactive rides above the mascot layer. */
       contentLayer: { position: 'relative', zIndex: 1 },
