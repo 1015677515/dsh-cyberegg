@@ -169,10 +169,10 @@ window.__ModuleLoader__.load({
       { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi' },
       { id: 'workbuddy', label: 'WorkBuddy', kind: 'http' },
       { id: 'trae', label: 'Trae (CN)', provider: 'trae', kind: 'pack' },
-      { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', refreshHourUtc8: 10 },
+      { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage' },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn' },
       { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch' },
-      { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', refreshHourUtc8: 10 },
+      { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage' },
       { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', claim: 'link', link: 'https://xiaohuanxiong.com/work/home' },
     ]
 
