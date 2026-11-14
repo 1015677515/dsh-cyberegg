@@ -382,13 +382,25 @@ window.__ModuleLoader__.load({
      * `deductionEndTime` (Trae, ms), `expiredTime` (Qoder/Loomy, ISO string),
      * `cycleEndTime` (string). Empty strings mean "no expiry".
      */
+    /**
+     * A package's expiry as epoch ms. channel-pack ships three shapes:
+     * `deductionEndTime` (Trae, ms), `expiredTime` (Qoder/Loomy, ISO string),
+     * `cycleEndTime` (string). Empty strings mean "no expiry".
+     *
+     * Sentinels are dropped: Qoder's usage document answers `expiresAt:
+     * 253402214400000` (= 9999-12-31) to mean "never", and printing that as an
+     * expiry date would be worse than printing nothing.
+     */
+    const MAX_PLAUSIBLE_EXPIRY_MS = Date.UTC(2100, 0, 1)
     function packageExpiryMs(entry) {
       const direct = firstNum(entry.deductionEndTime, entry.expireAt, entry.expiresAtMs)
-      if (direct !== undefined) return direct
+      if (direct !== undefined) {
+        return direct > 0 && direct < MAX_PLAUSIBLE_EXPIRY_MS ? direct : undefined
+      }
       for (const field of [entry.expiredTime, entry.cycleEndTime, entry.expiresAt, entry.expireAtTime]) {
         if (typeof field !== 'string' || field.trim().length === 0) continue
         const parsed = Date.parse(field)
-        if (Number.isFinite(parsed)) return parsed
+        if (Number.isFinite(parsed) && parsed > 0 && parsed < MAX_PLAUSIBLE_EXPIRY_MS) return parsed
       }
       return undefined
     }
