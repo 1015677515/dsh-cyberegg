@@ -23,6 +23,31 @@ window.__ModuleLoader__.load({
     const STORE_KEY = 'dsh-cyberegg/v1'
     const LEGACY_STORE_KEY = 'dsh-credit-dashboard/v1'
     const HOUR = 3600000
+    const MINUTE = 60000
+
+    /**
+     * Upper bound for one plugin-route HTTP read.
+     *
+     * Reads run through a serial queue (one platform at a time, deliberately:
+     * a burst is how these accounts get rate-limited), so a single routed read
+     * that never settles blocks every platform behind it. The browser's own
+     * default is measured in minutes, which is indistinguishable from a hung
+     * panel — so each routed read carries its own deadline instead.
+     */
+    const HTTP_TIMEOUT_MS = 12000
+
+    /**
+     * How long a manual check-in waits for the upstream to actually post the
+     * credits, and how often it re-reads the balance in that window.
+     *
+     * The verdict is always "did the balance increase", never "did the claim
+     * route answer ok". A single fixed sleep guessed at this; polling either
+     * catches the increase early or ends the window honestly — and a window
+     * that ends without an increase is reported as a delayed settlement, not
+     * as a failure, because only the upstream knows which one it is.
+     */
+    const CLAIM_SETTLE_TOTAL_MS = 6000
+    const CLAIM_SETTLE_STEP_MS = 700
 
     // Copy ships inline because the loader factory can only require the browser
     // module table; locale/*.json stays as the declared resource for the bundle
@@ -53,6 +78,7 @@ window.__ModuleLoader__.load({
       actionRequired: '需客户端开通',
       alreadyClaimed: '今天已领',
       noIncrease: '签到未生效',
+      claimDelayed: '延迟超时',
       history: '近两天',
       currentOnly: '只有插件里「当前使用」的账号能签到',
       autoTag: '自动',
@@ -134,6 +160,7 @@ window.__ModuleLoader__.load({
       actionRequired: 'Needs app activation',
       alreadyClaimed: 'Already claimed',
       noIncrease: 'No credit increase',
+      claimDelayed: 'Delayed',
       history: 'Recent',
       currentOnly: 'Only the account marked "in use" can check in here',
       autoTag: 'auto',
@@ -399,13 +426,29 @@ window.__ModuleLoader__.load({
         clearTimeout(timer)
       }
     }
+    /**
+     * fetch with our own deadline. Every routed read goes through here: a route
+     * that never settles would otherwise hold the serial queue for minutes
+     * (the browser's default), which reads to the user as a dead panel.
+     */
+    async function fetchWithDeadline(url, init) {
+      try {
+        return await fetch(url, { ...init, signal: AbortSignal.timeout(HTTP_TIMEOUT_MS) })
+      } catch (error) {
+        if (error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+          throw new Error('timeout after ' + HTTP_TIMEOUT_MS + 'ms')
+        }
+        throw error
+      }
+    }
+
     async function httpGet(url) {
-      const response = await fetch(url, { headers: { Accept: 'application/json' } })
+      const response = await fetchWithDeadline(url, { headers: { Accept: 'application/json' } })
       if (!response.ok) throw new Error('HTTP ' + response.status)
       return response.json()
     }
     async function httpPost(url, body) {
-      const response = await fetch(url, {
+      const response = await fetchWithDeadline(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(body || {}),
@@ -619,7 +662,7 @@ window.__ModuleLoader__.load({
      * account currently in use.
      */
     async function readWorkbuddy(platform) {
-      const response = await fetch('/plugins/dsh-connect-workbuddy/usage?region=cn', {
+      const response = await fetchWithDeadline('/plugins/dsh-connect-workbuddy/usage?region=cn', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -696,7 +739,7 @@ window.__ModuleLoader__.load({
       // TTL cache, and bypassing it on every scheduled read would pay upstream
       // for a number that is already two minutes old at worst.
       const url = '/api/codearts/status' + (force === true ? '?force=1' : '')
-      const response = await fetch(url, { headers: { Accept: 'application/json' } })
+      const response = await fetchWithDeadline(url, { headers: { Accept: 'application/json' } })
       let payload = null
       try { payload = await response.json() } catch { /* non-JSON body */ }
       if (!response.ok) {
@@ -739,7 +782,7 @@ window.__ModuleLoader__.load({
      * the derived numbers, never the `wps_sid`.
      */
     async function readLingxi(platform) {
-      const response = await fetch('/plugins/dsh-cyberegg/lingxi?action=status', {
+      const response = await fetchWithDeadline('/plugins/dsh-cyberegg/lingxi?action=status', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -799,7 +842,7 @@ window.__ModuleLoader__.load({
      * remaining balance. The Host half parses that log.
      */
     async function readMobileclaw(platform) {
-      const response = await fetch('/plugins/dsh-cyberegg/mobileclaw', {
+      const response = await fetchWithDeadline('/plugins/dsh-cyberegg/mobileclaw', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -845,7 +888,7 @@ window.__ModuleLoader__.load({
      * needs no launch token to read.
      */
     async function readTrae(platform) {
-      const response = await fetch('/plugins/dsh-connect-trae/usage', {
+      const response = await fetchWithDeadline('/plugins/dsh-connect-trae/usage', {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -1294,16 +1337,25 @@ window.__ModuleLoader__.load({
         if (!seed) return
         setPlatforms((current) => ({ ...current, [id]: { ...current[id], claiming: true, notice: '' } }))
         try {
-          // Evidence, not trust: read the balance, claim, let the upstream
-          // settle, read again. Only a real increase proves the check-in —
-          // an "ok" reply from the claim route alone does not.
+          // Evidence, not trust: read the balance, claim, then keep re-reading
+          // until the balance actually increases or the window closes. Only a
+          // real increase proves the check-in — an "ok" reply from the claim
+          // route alone does not, and a single guessed sleep either misses a
+          // slow settlement or wastes the user's time waiting for a fast one.
           const beforeRead = await refresh(id, false, true)
           const before = creditOf(beforeRead, account)
           const result = await claimPlatform(seed, account)
-          await new Promise((resolve) => setTimeout(resolve, 1800))
-          const afterRead = await refresh(id, false, true)
-          const after = creditOf(afterRead, account)
-          const delta = before !== undefined && after !== undefined ? after - before : undefined
+          let after
+          let delta
+          const settleBy = Date.now() + CLAIM_SETTLE_TOTAL_MS
+          while (Date.now() < settleBy) {
+            await new Promise((resolve) => setTimeout(resolve, CLAIM_SETTLE_STEP_MS))
+            const read = await refresh(id, false, true)
+            after = creditOf(read, account)
+            if (before === undefined || after === undefined) { delta = undefined; continue }
+            delta = after - before
+            if (delta > 0) break
+          }
           const fallbackOutcome = (result.rows && result.rows[0] && result.rows[0].kind) || 'unknown'
           const rows = (result.rows && result.rows.length > 0)
             ? result.rows
@@ -1323,9 +1375,16 @@ window.__ModuleLoader__.load({
             })
           }
           const verified = typeof delta === 'number' && delta > 0
+          // Three endings, not two: a measured increase (proof), an upstream
+          // that says the day was already claimed (nothing was owed), and a
+          // claim the upstream accepted whose credits have not posted inside
+          // the window. The last is a delay, and is worded as one — a closed
+          // window is not evidence that the claim failed.
           const notice = verified
             ? '+' + delta
-            : (fallbackOutcome === 'already-claimed' ? 'already-claimed' : (result.message || fallbackOutcome))
+            : (fallbackOutcome === 'already-claimed'
+              ? 'already-claimed'
+              : 'delayed:' + (result.message || fallbackOutcome))
           setPlatforms((current) => ({ ...current, [id]: { ...current[id], claiming: false, notice } }))
         } catch (error) {
           const message = String((error && error.message) || error)
@@ -1490,7 +1549,17 @@ window.__ModuleLoader__.load({
         ),
         state.error ? h('div', { style: { padding: '0 12px 8px 34px' } }, h('span', { style: S.err }, t('readFailed') + ': ' + state.error)) : null,
         seed.note ? h('div', { style: S.platformNote }, t(seed.note)) : null,
-        state.notice ? h('div', { style: { padding: '0 12px 8px 34px' } }, h('span', { style: S.muted }, state.notice)) : null,
+        state.notice ? h('div', { style: { padding: '0 12px 8px 34px' } },
+          h('span', {
+            style: state.notice.charAt(0) === '+' ? S.ok
+              : (state.notice === 'already-claimed' ? S.muted
+                : (state.notice.slice(0, 8) === 'delayed:' ? S.warn : S.muted)),
+          }, state.notice.charAt(0) === '+' ? state.notice
+            : (state.notice === 'already-claimed' ? t('alreadyClaimed')
+              : (state.notice.slice(0, 8) === 'delayed:'
+                ? t('claimDelayed') + ' · ' + state.notice.slice(8)
+                : state.notice))),
+        ) : null,
         collapsed ? null : h('div', { style: S.rows },
           accounts.length === 0
             ? h('div', { style: { ...S.row, ...S.rowFirst } }, h('span', { style: S.muted }, t('noAccount')))
@@ -1539,7 +1608,7 @@ window.__ModuleLoader__.load({
       else if (ledgerEntry && typeof ledgerEntry.delta !== 'number') badge = h('span', { style: S.idle }, t('unknown'))
       else if (ledgerEntry && !verifiedDelta && ledgerEntry.outcome === 'already-claimed')
         badge = h('span', { style: S.muted }, t('alreadyClaimed'))
-      else if (ledgerEntry && !verifiedDelta) badge = h('span', { style: S.err }, t('noIncrease'))
+      else if (ledgerEntry && !verifiedDelta) badge = h('span', { style: S.warn }, t('claimDelayed'))
       else if (effectiveChecked === false) badge = h('span', { style: S.warn }, t('notCheckedIn'))
       else badge = h('span', { style: S.idle }, t('unknown'))
 

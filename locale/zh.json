@@ -24,6 +24,7 @@
   "actionRequired": "需客户端开通",
   "alreadyClaimed": "今天已领",
   "noIncrease": "签到未生效",
+  "claimDelayed": "延迟超时",
   "history": "近两天",
   "currentOnly": "只有插件里「当前使用」的账号能签到",
   "autoTag": "自动",

@@ -24,6 +24,7 @@
   "actionRequired": "Needs app activation",
   "alreadyClaimed": "Already claimed",
   "noIncrease": "No credit increase",
+  "claimDelayed": "Delayed",
   "history": "Recent",
   "currentOnly": "Only the account marked \"in use\" can check in here",
   "autoTag": "auto",
