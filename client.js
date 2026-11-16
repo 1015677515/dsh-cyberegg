@@ -108,6 +108,7 @@ window.__ModuleLoader__.load({
       noteMinimax: '签到 1000/天 · 有效期未验证',
       noteLingxi: '签到智点 · 有效期未验证',
       noteWorkbuddy: '签到 100/天 · 30 天有效',
+      noteWorkbuddyGlobal: '月度包 100 积分 · 每月刷新',
       noteTrae: '签到 100/天 · 30 天有效',
       noteQoder: '每日领 100 · 领取后 30 天有效',
       noteCodearts: '签到 100/天 · 套餐周期 30 天，周期末作废',
@@ -190,6 +191,7 @@ window.__ModuleLoader__.load({
       noteMinimax: 'check-in 1000/day · expiry unverified',
       noteLingxi: 'check-in points · expiry unverified',
       noteWorkbuddy: 'check-in 100/day · valid 30 days',
+      noteWorkbuddyGlobal: 'monthly 100-credit pack · refreshes monthly',
       noteTrae: 'check-in 100/day · valid 30 days',
       noteQoder: 'claim 100 daily · valid 30 days after claim',
       noteCodearts: 'check-in 100/day · 30-day plan cycle, written off at cycle end',
@@ -220,16 +222,27 @@ window.__ModuleLoader__.load({
     /** Platforms in default display order (most productive freebies first). */
     const PLATFORM_SEED = [
       { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', dailyQuota: 5000, dailyNote: 'expiresToday', note: 'noteLoomy' },
-      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteMinimax' },
-      { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', note: 'noteLingxi' },
-      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', note: 'noteWorkbuddy' },
-      { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', note: 'noteTrae' },
-      { id: 'qoder', label: 'Qoder 国际', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
+      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'cn', note: 'noteWorkbuddy' },
+      { id: 'workbuddyglobal', label: 'WorkBuddy 国际服', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'global', note: 'noteWorkbuddyGlobal' },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
-      { id: 'mobileclaw', label: 'MobileClaw', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch', note: 'noteMobileclaw' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
+      { id: 'qoder', label: 'Qoder 国际服', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
       { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', note: 'noteRaccoon' },
+      { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', note: 'noteTrae' },
+      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteMinimax' },
+      { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', note: 'noteLingxi', defaultHidden: true },
+      { id: 'mobileclaw', label: 'MobileClaw (中国移动)', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch', note: 'noteMobileclaw', defaultHidden: true },
     ]
+
+    /**
+     * Rows that start hidden. The seed is the single source of truth: a platform
+     * a user rarely opens should not cost them a row on every single visit, but
+     * it must stay one click away (`已隐藏：…` at the bottom restores it).
+     */
+    const DEFAULT_HIDDEN = {}
+    for (const seed of PLATFORM_SEED) {
+      if (seed.defaultHidden === true) DEFAULT_HIDDEN[seed.id] = true
+    }
 
     const INTERVALS = [
       { ms: 15 * 60000, label: '15m' },
@@ -265,22 +278,46 @@ window.__ModuleLoader__.load({
     }
 
     // ── preferences ───────────────────────────────────────────────────────
+    /**
+     * Bumped whenever the seed changes shape (a row added, the default order
+     * rearranged). A stored `order` from an older shape cannot name a row that
+     * did not exist yet — appending it would silently bury the new platform at
+     * the bottom, which is exactly where nobody looks. On a bump the default
+     * order wins; the user's own collapse, interval and hide choices are kept.
+     */
+    const PREFS_VERSION = 2
+
+    function freshPrefs() {
+      return {
+        version: PREFS_VERSION,
+        order: PLATFORM_SEED.map((p) => p.id),
+        collapsed: {},
+        intervals: {},
+        hidden: { ...DEFAULT_HIDDEN },
+      }
+    }
+
     function loadPrefs() {
-      const empty = { order: PLATFORM_SEED.map((p) => p.id), collapsed: {}, intervals: {}, hidden: {} }
+      const base = freshPrefs()
       try {
         const raw = window.localStorage.getItem(STORE_KEY) || window.localStorage.getItem(LEGACY_STORE_KEY)
-        if (!raw) return empty
+        if (!raw) return base
         const parsed = JSON.parse(raw)
-        return {
-          order: Array.isArray(parsed.order) ? parsed.order : PLATFORM_SEED.map((p) => p.id),
-          collapsed: parsed.collapsed && typeof parsed.collapsed === 'object' ? parsed.collapsed : {},
-          intervals: parsed.intervals && typeof parsed.intervals === 'object' ? parsed.intervals : {},
-          // Hidden platforms still keep their slot in `order`, so unhiding puts
-          // them back where they were instead of at the end of the list.
-          hidden: parsed.hidden && typeof parsed.hidden === 'object' ? parsed.hidden : {},
+        const known = new Set(base.order)
+        const collapsed = parsed.collapsed && typeof parsed.collapsed === 'object' ? parsed.collapsed : {}
+        const intervals = parsed.intervals && typeof parsed.intervals === 'object' ? parsed.intervals : {}
+        const hidden = parsed.hidden && typeof parsed.hidden === 'object' ? parsed.hidden : {}
+        let order = base.order
+        if (Number(parsed.version) === PREFS_VERSION && Array.isArray(parsed.order)) {
+          order = parsed.order.filter((id) => known.has(id))
+          // A row added without a version bump still must not vanish.
+          for (const id of base.order) if (!order.includes(id)) order.push(id)
         }
+        // Defaults are a floor, never an override: an explicit choice the user
+        // made (including `false`) wins over `defaultHidden`.
+        return { version: PREFS_VERSION, order, collapsed, intervals, hidden: { ...base.hidden, ...hidden } }
       } catch {
-        return empty
+        return base
       }
     }
     function savePrefs(prefs) {
@@ -654,7 +691,7 @@ window.__ModuleLoader__.load({
     /**
      * WorkBuddy: read the plugin's own status document, exactly as its card does.
      *
-     * `GET /plugins/dsh-connect-workbuddy/usage?region=cn` puts the per-account
+     * `GET /plugins/dsh-connect-workbuddy/usage?region=<cn|global>` puts the per-account
      * table under `pool.accounts` — NOT under the top-level `accounts`, which
      * carries only id/name/domain. Reading the wrong one is why this row showed
      * nothing. Each pool row has `credits` (number), `nearestExpiryMs`, `current`
@@ -662,7 +699,10 @@ window.__ModuleLoader__.load({
      * account currently in use.
      */
     async function readWorkbuddy(platform) {
-      const response = await fetchWithDeadline('/plugins/dsh-connect-workbuddy/usage?region=cn', {
+      // The plugin runs two provider stacks behind one route; `global` is the
+      // international one. Same document shape, different account pool.
+      const region = platform.region === 'global' ? 'global' : 'cn'
+      const response = await fetchWithDeadline('/plugins/dsh-connect-workbuddy/usage?region=' + region, {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -687,20 +727,55 @@ window.__ModuleLoader__.load({
             }))
             .filter((entry) => entry.remaining !== undefined)
         : []
-      const accounts = list.map((row) => ({
-        accountId: String(row.accountId || row.id || row.accountName || 'workbuddy'),
-        nickname: String(row.accountName || row.accountId || 'WorkBuddy'),
-        credit: typeof row.credits === 'number' ? row.credits : undefined,
-        packages: row.current === true ? currentPackages : [],
-        expiry: formatDate(row.nearestExpiryMs),
-        checkedIn: typeof row.checkedInToday === 'boolean' ? row.checkedInToday : undefined,
-        actionRequired: false,
-        active: true,
-        statusKnown: typeof row.checkedInToday === 'boolean',
-        current: row.current === true,
-        error: '',
-      }))
-      return { accounts, error: accounts.length === 0 ? 'empty payload' : '', raw: payload }
+      // The top-level `credits` is the one place the current account's balance is
+      // guaranteed to appear. With `pool.enabled: false` — which is how the
+      // international side ships by default — the pool row carries no `credits`
+      // field at all, so reading the row alone shows "—" for an account that
+      // actually holds credits. The row is the primary source; this is the floor.
+      const currentTotal = currentCredits ? firstNum(currentCredits.total) : undefined
+      // `checkin.active: false` means the region runs no check-in campaign. That
+      // is not "not checked in today" — there is nothing to check into, so the
+      // honest answer is "unknown"; showing 未签到 would invent a missed day.
+      const topCheckin = payload && payload.checkin ? payload.checkin : null
+      const topCheckedIn = topCheckin === null || topCheckin.active === false
+        ? undefined
+        : typeof topCheckin.todayCheckedIn === 'boolean' ? topCheckin.todayCheckedIn : undefined
+      const toRow = (row) => {
+        const isCurrent = row.current === true
+        const checkedIn = typeof row.checkedInToday === 'boolean'
+          ? row.checkedInToday
+          : (isCurrent ? topCheckedIn : undefined)
+        return {
+          accountId: String(row.accountId || row.id || row.accountName || 'workbuddy'),
+          nickname: String(row.accountName || row.accountId || 'WorkBuddy'),
+          credit: typeof row.credits === 'number' ? row.credits : (isCurrent ? currentTotal : undefined),
+          packages: isCurrent ? currentPackages : [],
+          expiry: formatDate(row.nearestExpiryMs),
+          checkedIn,
+          actionRequired: false,
+          active: true,
+          statusKnown: checkedIn !== undefined,
+          current: isCurrent,
+          error: '',
+        }
+      }
+      const accounts = list.map(toRow)
+      // A disabled pool can also leave `pool.accounts` empty while the top-level
+      // document is fully populated. Synthesize that one account from it rather
+      // than printing "no account" beside a real balance.
+      if (accounts.length === 0 && currentCredits) {
+        accounts.push(toRow({
+          accountId: payload.accountId,
+          accountName: payload.accountName,
+          current: true,
+          credits: currentTotal,
+        }))
+      }
+      // An empty pool is a normal state, not a read failure: the user simply has
+      // no account signed in for THIS region (most people have one side only).
+      // Reporting "empty payload" as an error made the international row look
+      // broken on every machine that never signed into it.
+      return { accounts, error: '', raw: payload }
     }
 
     /**
@@ -953,7 +1028,7 @@ window.__ModuleLoader__.load({
 
     async function readPlatform(platform, force) {
       if (platform.kind === 'pack') return readPackPlatform(platform)
-      if (platform.id === 'workbuddy') return readWorkbuddy(platform)
+      if (platform.id === 'workbuddy' || platform.id === 'workbuddyglobal') return readWorkbuddy(platform)
       if (platform.id === 'codearts') return readCodearts(platform, force)
       if (platform.id === 'lingxi') return readLingxi(platform)
       if (platform.id === 'mobileclaw') return readMobileclaw(platform)
@@ -1003,10 +1078,11 @@ window.__ModuleLoader__.load({
           })),
         }
       }
-      if (platform.id === 'workbuddy') {
+      if (platform.id === 'workbuddy' || platform.id === 'workbuddyglobal') {
         // This route checks in the region's CURRENT account: it takes no
         // accountId, so only the row the plugin marks `current` may fire it.
-        const payload = await httpPost('/plugins/dsh-connect-workbuddy/checkin?region=cn', {})
+        const region = platform.region === 'global' ? 'global' : 'cn'
+        const payload = await httpPost('/plugins/dsh-connect-workbuddy/checkin?region=' + region, {})
         const kind = payload && payload.alreadyCheckedIn === true ? 'already-claimed' : 'claimed'
         return {
           message: describeClaim(payload),
@@ -1664,7 +1740,7 @@ window.__ModuleLoader__.load({
           : seed.claim === 'auto'
           ? h('span', { style: { ...S.iconBtn, opacity: 0.4, cursor: 'default', width: 62, textAlign: 'center' } }, t('autoTag'))
           : (() => {
-              const locked = (seed.id === 'workbuddy' && row.current !== true) || row.needLogin === true
+              const locked = ((seed.id === 'workbuddy' || seed.id === 'workbuddyglobal') && row.current !== true) || row.needLogin === true
               const disabled = state.claiming || locked
               return h('button', {
                 style: { ...S.iconBtn, width: 62, ...(disabled && !state.claiming ? { opacity: 0.45, cursor: 'not-allowed' } : null) },

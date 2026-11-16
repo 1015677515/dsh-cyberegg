@@ -34,7 +34,7 @@
 |---|---|---|
 | Loomy · MiniMax Code · Qoder 国际 · Qoder 中国 · Raccoon (商汤) | [`dsh-our-free-model`](https://github.com/Ebony-Vinyl/dsh-our-free-model) 的 channel-pack RPC | ✅ 强烈推荐 |
 | **Trae（CN）** | [`dsh-connect-trae`](https://github.com/dingminhua/dsh-connect-trae) 的 `/usage` 文档 | ✅ 推荐（比 channel-pack 多签到状态与厂商包名） |
-| WorkBuddy（腾讯 CodeBuddy，**仅国内版**） | [`dsh-connect-workbuddy`](https://github.com/dingminhua/dsh-connect-workbuddy) | ✅ 推荐（国际版 `workbuddy-global` 暂未接入） |
+| WorkBuddy（腾讯 CodeBuddy，**国内版 + 国际服**） | [`dsh-connect-workbuddy`](https://github.com/dingminhua/dsh-connect-workbuddy) | ✅ 推荐（`?region=cn` 与 `?region=global` 是两条独立账号池，面板各占一行） |
 | CodeArts（华为云） | [`dsh-codearts`](https://github.com/elegant01/dsh-codearts) | 可选 |
 | WPS 灵犀 | 本插件自带（读灵犀桌面端 Cookies，或手填 `wps_sid`） | 可选 |
 | MobileClaw（移动云震泽） | 本插件自带（读 App 自己的日志） | 可选 |
@@ -51,7 +51,8 @@
 
 | 平台 | 剩余积分 | 今日是否签到 | 手动签到 | 核对 | 备注 |
 |---|:---:|:---:|:---:|:---:|---|
-| WorkBuddy（仅国内版） | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 逐包 | 签到 100/天，30 天有效；国际版未接入 |
+| WorkBuddy（国内版） | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 逐包 | 签到 100/天，30 天有效 |
+| WorkBuddy 国际服 | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 实测余额 | 月度免费包 **100 积分 · 每月刷新**；签到活动当前未开启（`active: false`） |
 | Trae（CN） | ✅ | ✅ **账号级** | ✅ | ✅ 逐包 | 签到 100/天，30 天有效；读 `dsh-connect-trae` 的 usage |
 | Qoder 国际 / 中国 | ✅ 汇总 | ✅ | ✅ | ⚠️ 仅汇总 | 每日 10:00 刷新；逐包明细接口不提供，走官网 |
 | Loomy | ✅ 永久池 + 每日池 | ✅ | ✅ 每日额度初始化 | ✅ 实测 | 每日池 5000，登录后重置 |
@@ -93,6 +94,8 @@ dsh plugin --profile <你的 profile> remove dsh-cyberegg
 - **到期预警**：按「到期日」逐日归并，只统计 3 天内的金额；CodeArts 这种只给汇总额的，单独显示「周期末总共作废 + 到期日」。展开可看每天到期的具体金额
 - **近两天历史**：每个平台展开后底部有近两天的总积分变化，用来事后核对
 - **平台备注**：每行下面一行小字说明「签到给多少 + 有效期」，无法验证的会明确写「有效期未验证」
+- **默认顺序**：Loomy → WorkBuddy → WorkBuddy 国际服 → CodeArts（华为云）→ Qoder 中国 → Qoder 国际服 → Raccoon（商汤）→ Trae → MiniMax → WPS 灵犀 → MobileClaw。拖动即可改成你自己的顺序
+- **默认隐藏**：**WPS 灵犀与 MobileClaw（中国移动）默认隐藏**——它们读的是本机 App 的数据，不常开就少占两行；底部「已隐藏：…」一点即恢复，位置不会丢
 
 ---
 

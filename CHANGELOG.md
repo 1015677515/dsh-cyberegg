@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 — 2026-11-16
+
+- 新增 **WorkBuddy 国际服** 一行（`region=global`），排在 WorkBuddy 下方；国内版与国际服是两条独立账号池，各自读取余额与签到
+- **默认顺序重排**：Loomy → WorkBuddy → WorkBuddy 国际服 → CodeArts → Qoder 中国 → Qoder 国际服 → Raccoon → Trae → MiniMax → WPS 灵犀 → MobileClaw
+- **WPS 灵犀、MobileClaw（中国移动）默认隐藏**（底部可一键恢复）；`PLATFORM_SEED` 的 `defaultHidden` 是唯一开关
+- `loadPrefs` 加版本号：种子形状变化时用新默认顺序，同时保留用户自己的折叠 / 间隔 / 隐藏选择；旧顺序里缺失的新平台不会再被塞到列表末尾
+- **积分回退顶层**：`pool.enabled: false`（国际服默认如此）时池行不带 `credits` 字段，改为回退读顶层 `credits.total`——国际服那行从此显示真实余额，不再是 `—`。空池时还会用顶层文档合成那一行，不再显示「无账号」
+- **签到状态回退顶层** `checkin`，但 `checkin.active: false`（该区没开签到活动）一律报「未知」而不是「未签到」——没有活动不等于漏签
+- 空账号池不再算读取错误（原来会显示「读取失败: empty payload」）
+- 国际服备注写明「月度包 100 积分 · 每月刷新」（实测 `monthly: true`、`size: 100`、`credits.total = 93.09`）
+
 ## 0.1.1 — 2026-11-15
 
 - 路由读取统一加 12 秒截止（`HTTP_TIMEOUT_MS`）：任一插件路由挂住时不再拖死整条串行队列——浏览器默认超时以分钟计，表现和面板死掉没有区别

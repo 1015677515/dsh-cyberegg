@@ -54,6 +54,7 @@
   "noteMinimax": "check-in 1000/day · expiry unverified",
   "noteLingxi": "check-in points · expiry unverified",
   "noteWorkbuddy": "check-in 100/day · valid 30 days",
+  "noteWorkbuddyGlobal": "monthly 100-credit pack · refreshes monthly",
   "noteTrae": "check-in 100/day · valid 30 days",
   "noteQoder": "claim 100 daily · valid 30 days after claim",
   "noteCodearts": "check-in 100/day · 30-day plan cycle, written off at cycle end",
