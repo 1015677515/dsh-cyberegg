@@ -105,14 +105,17 @@ window.__ModuleLoader__.load({
       detail: '积分详情',
       detailHint: '打开官网积分明细页',
       noteLoomy: '每日池 5000 · 每日登录后重置为 5000',
-      noteMinimax: '签到 1000/天 · 有效期未验证',
-      noteLingxi: '签到智点 · 有效期未验证',
+      noteMinimax: '签到 400/天 · 连签日 1000 · 1 个月有效',
+      noteLingxi: '签到智点 · 有效期未验证 · 未经详实测试',
       noteWorkbuddy: '签到 100/天 · 30 天有效',
       noteWorkbuddyGlobal: '月度包 100 积分 · 每月刷新',
       noteTrae: '签到 100/天 · 30 天有效',
-      noteQoder: '每日领 100 · 领取后 30 天有效',
+      noteTraeGlobal: '免费档 · 按美元计费 · 无积分池；详情见国际服官网',
+      notSupported: '不支持',
+      noteQoder: '每日领 100 · 约 30 天有效（资源包声明，未逐笔核对）',
       noteCodearts: '签到 100/天 · 套餐周期 30 天，周期末作废',
-      noteMobileclaw: '打卡礼 100 万 token/天 · 30 天有效',
+      noteMobileclaw: '打卡礼 100 万 token/天 · 30 天有效 · 未经详实测试',
+      noteTeleagent: '天翼 AI 星辰 · 每天签到 100 积分（额度以上游为准）',
       noteRaccoon: '每日 300（需网页签到）· 发放后 7 天有效',
       missingTitle: '未安装',
       missingBody: '这行数据来自该插件，装上之后才会出数：',
@@ -188,14 +191,17 @@ window.__ModuleLoader__.load({
       detail: 'Detail',
       detailHint: 'Open the official credit detail page',
       noteLoomy: 'daily pool 5000 · resets to 5000 on each login',
-      noteMinimax: 'check-in 1000/day · expiry unverified',
-      noteLingxi: 'check-in points · expiry unverified',
+      noteMinimax: 'check-in 400/day · 1000 on streak days · valid 1 month',
+      noteLingxi: 'check-in points · expiry unverified · not thoroughly tested',
       noteWorkbuddy: 'check-in 100/day · valid 30 days',
       noteWorkbuddyGlobal: 'monthly 100-credit pack · refreshes monthly',
       noteTrae: 'check-in 100/day · valid 30 days',
-      noteQoder: 'claim 100 daily · valid 30 days after claim',
+      noteTraeGlobal: 'free tier · billed in USD · no credit pool; see trae.ai for details',
+      notSupported: 'n/a',
+      noteQoder: 'claim 100 daily · ~30 days (declared by the pack, not verified per claim)',
       noteCodearts: 'check-in 100/day · 30-day plan cycle, written off at cycle end',
-      noteMobileclaw: 'daily token gift 1M/day · valid 30 days',
+      noteMobileclaw: 'daily token gift 1M/day · valid 30 days · not thoroughly tested',
+      noteTeleagent: 'Telecom AI TeleAgent · 100 credits per daily check-in (amount from upstream)',
       noteRaccoon: 'daily 300 (claim on the web page) · valid 7 days',
       missingTitle: 'Not installed:',
       missingBody: 'These rows read through that plugin — install it to see numbers:',
@@ -221,17 +227,19 @@ window.__ModuleLoader__.load({
 
     /** Platforms in default display order (most productive freebies first). */
     const PLATFORM_SEED = [
-      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', dailyQuota: 5000, dailyNote: 'expiresToday', note: 'noteLoomy' },
-      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'cn', note: 'noteWorkbuddy' },
-      { id: 'workbuddyglobal', label: 'WorkBuddy 国际服', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'global', note: 'noteWorkbuddyGlobal' },
+      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', dailyQuota: 5000, dailyNote: 'expiresToday', detailUrl: 'https://loomy.xunfei.cn', note: 'noteLoomy' },
+      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'cn', detailUrl: 'https://www.codebuddy.cn', note: 'noteWorkbuddy' },
+      { id: 'workbuddyglobal', label: 'WorkBuddy 国际服', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'global', detailUrl: 'https://www.workbuddy.ai', note: 'noteWorkbuddyGlobal', defaultHidden: true },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
       { id: 'qoder', label: 'Qoder 国际服', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
-      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', note: 'noteRaccoon' },
-      { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', note: 'noteTrae' },
-      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', note: 'noteMinimax' },
-      { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', note: 'noteLingxi', defaultHidden: true },
+      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', detailUrl: 'https://xiaohuanxiong.com/work/home', note: 'noteRaccoon' },
+      { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', region: 'cn', detailUrl: 'https://www.trae.cn', note: 'noteTrae' },
+      { id: 'trae-global', label: 'Trae 国际版', kind: 'trae', needs: 'dsh-connect-trae', region: 'ai', detailUrl: 'https://www.trae.ai', note: 'noteTraeGlobal', defaultHidden: true, claim: 'none' },
+      { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', detailUrl: 'https://agent.minimax.cn', note: 'noteMinimax' },
+      { id: 'lingxi', label: 'WPS 灵犀', kind: 'lingxi', detailUrl: 'https://lingxi.wps.cn', note: 'noteLingxi', defaultHidden: true },
       { id: 'mobileclaw', label: 'MobileClaw (中国移动)', kind: 'mobileclaw', claim: 'auto', autoNote: 'autoAppLaunch', note: 'noteMobileclaw', defaultHidden: true },
+      { id: 'teleagent', label: 'TeleAgent (天翼 AI)', kind: 'teleagent', needs: 'dsh-connect-teleagent', detailUrl: 'https://agent.teleai.com.cn/super', note: 'noteTeleagent' },
     ]
 
     /**
@@ -266,6 +274,10 @@ window.__ModuleLoader__.load({
       'dsh-connect-workbuddy': {
         repo: 'https://github.com/dingminhua/dsh-connect-workbuddy',
         install: 'dsh plugin --profile desktop add github:dingminhua/dsh-connect-workbuddy',
+      },
+      'dsh-connect-teleagent': {
+        repo: 'https://github.com/alvinhuang0509-design/dsh-connect-teleagent',
+        install: 'dsh plugin --profile desktop add dsh-connect-teleagent',
       },
       'dsh-codearts': {
         repo: 'https://github.com/elegant01/dsh-codearts',
@@ -477,6 +489,37 @@ window.__ModuleLoader__.load({
         }
         throw error
       }
+    }
+
+    /**
+     * TeleAgent RPC. That plugin registers `/api/teleagent-connect` through the
+     * host's `connection.fetch` service instead of a `/plugins/` route, so this
+     * is the only door to its data. Envelope and reply are the same shape the
+     * channel-pack RPC uses: `{type:'client-request', method, payload:{method,
+     * payload}}` in, `{result:{ok, value|error}}` out.
+     */
+    async function teleagentRpc(method, payload) {
+      const response = await fetchWithDeadline('/api/teleagent-connect', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          type: 'client-request',
+          rpcId: rpcId(),
+          method: 'teleagent-connect',
+          payload: { method, payload: payload || {} },
+        }),
+      })
+      if (response.status === 404) {
+        const missing = new Error('HTTP 404')
+        missing.missingDependency = 'dsh-connect-teleagent'
+        throw missing
+      }
+      if (!response.ok) throw new Error('HTTP ' + response.status)
+      const envelope = await response.json()
+      const result = envelope && envelope.result
+      if (result && result.ok === true) return result.value
+      const error = (result && result.error) || {}
+      throw new Error(error.message || error.code || 'teleagent-rpc-failed')
     }
 
     async function httpGet(url) {
@@ -779,6 +822,74 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * TeleAgent（中国电信天翼 AI 星辰）: read through `dsh-connect-teleagent`.
+     *
+     * Three verbs, read in two steps on purpose: `status` says whether this
+     * machine has a credential at all, and only a signed-in account is worth a
+     * balance read. That split is the same lesson the plugin itself learned in
+     * 1.0.2 — a failing `credits` call used to take the successful `status`
+     * down with it, and "not signed in" was reported as "read failed".
+     *
+     * Amounts come from upstream: `balance` is a number or `undefined` (never a
+     * fabricated 0), and today's check-in state is `checkin.claimed`.
+     */
+    async function readTeleagent(platform) {
+      let status
+      try {
+        status = await teleagentRpc('status')
+      } catch (error) {
+        if (error && error.missingDependency) {
+          return { accounts: [], error: '', missingDependency: 'dsh-connect-teleagent' }
+        }
+        return { accounts: [], error: String((error && error.message) || error) }
+      }
+      const nickname = status && status.nickname ? String(status.nickname) : 'TeleAgent'
+      const accountId = status && status.accountId ? String(status.accountId) : 'teleagent'
+      if (!status || status.loggedIn !== true || status.expired === true) {
+        return {
+          accounts: [{
+            accountId,
+            nickname,
+            credit: undefined,
+            packages: [],
+            expiry: '',
+            checkedIn: undefined,
+            needLogin: true,
+            actionRequired: false,
+            active: true,
+            statusKnown: false,
+            error: status && status.expired === true
+              ? 'TeleAgent 凭据已过期：在插件设置里重新粘贴 token'
+              : '未登录 TeleAgent：在插件设置里粘贴 token',
+          }],
+          error: '',
+          raw: status,
+        }
+      }
+      const [balance, checkin] = await Promise.all([
+        teleagentRpc('credits.balance').catch(() => null),
+        teleagentRpc('credits.status').catch(() => null),
+      ])
+      return {
+        accounts: [{
+          accountId,
+          nickname,
+          credit: balance ? firstNum(balance.balance) : undefined,
+          packages: [],
+          expiry: '',
+          checkedIn: checkin ? checkin.claimed === true : undefined,
+          actionRequired: false,
+          active: true,
+          statusKnown: Boolean(checkin),
+          current: true,
+          error: '',
+        }],
+        error: '',
+        raw: { status, balance, checkin },
+      }
+    }
+
+    /**
      * CodeArts: same reading order the plugin's own card uses (`rowsOf`).
      *
      * `/api/codearts/status` answers `{ status, accounts, credits, creditsByAccount }`
@@ -963,7 +1074,11 @@ window.__ModuleLoader__.load({
      * needs no launch token to read.
      */
     async function readTrae(platform) {
-      const response = await fetchWithDeadline('/plugins/dsh-connect-trae/usage', {
+      // Three editions behind one route: `cn` / `enterprise` / `ai`. The route
+      // defaults to the domestic edition when no region is given, which is why
+      // an international login was invisible here until now.
+      const region = platform.region === 'ai' ? 'ai' : 'cn'
+      const response = await fetchWithDeadline('/plugins/dsh-connect-trae/usage?region=' + region, {
         headers: { Accept: 'application/json' },
       })
       let payload = null
@@ -1009,7 +1124,7 @@ window.__ModuleLoader__.load({
           accountId: 'trae',
           nickname: accounts.length > 0 && accounts[0].accountName
             ? String(accounts[0].accountName)
-            : 'Trae (CN)',
+            : (region === 'ai' ? 'Trae (Global)' : 'Trae (CN)'),
           credit: credits ? firstNum(credits.generalAvailable, credits.available) : undefined,
           packages,
           expiry: '',
@@ -1033,6 +1148,7 @@ window.__ModuleLoader__.load({
       if (platform.id === 'lingxi') return readLingxi(platform)
       if (platform.id === 'mobileclaw') return readMobileclaw(platform)
       if (platform.id === 'trae') return readTrae(platform)
+      if (platform.id === 'teleagent') return readTeleagent(platform)
       return { accounts: [], error: 'unsupported' }
     }
 
@@ -1104,11 +1220,29 @@ window.__ModuleLoader__.load({
           rows: account ? [{ accountId: account.accountId, kind }] : [],
         }
       }
+      if (platform.id === 'teleagent') {
+        // `credits.claim` re-queries the panel internally, so its `claimed`
+        // cannot tell "just claimed" from "claimed earlier". Ask first: a day
+        // already claimed is answered without touching the upstream.
+        const before = await teleagentRpc('credits.status').catch(() => null)
+        if (before && before.claimed === true) {
+          return {
+            message: '今日已领',
+            rows: account ? [{ accountId: account.accountId, kind: 'already-claimed' }] : [],
+          }
+        }
+        await teleagentRpc('credits.claim')
+        return {
+          message: '已领取',
+          rows: account ? [{ accountId: account.accountId, kind: 'claimed' }] : [],
+        }
+      }
       if (platform.id === 'trae') {
         // The Trae connector claims one account per call and answers
         // `{ claimed, alreadyCheckedIn }`; no batch form exists.
+        const region = platform.region === 'ai' ? 'ai' : 'cn'
         const payload = await httpPost(
-          '/plugins/dsh-connect-trae/checkin?accountId=' + encodeURIComponent(account ? account.accountId : ''),
+          '/plugins/dsh-connect-trae/checkin?region=' + region + '&accountId=' + encodeURIComponent(account ? account.accountId : ''),
           {},
         )
         const already = payload && (payload.alreadyCheckedIn === true || payload.claimed === false)
@@ -1673,7 +1807,8 @@ window.__ModuleLoader__.load({
           : undefined
       const effectiveChecked = done === true
       let badge = null
-      if (seed.claim === 'once') badge = h('span', { style: S.muted }, t('onceOnly'))
+      if (seed.claim === 'none') badge = h('span', { style: S.muted }, t('notSupported'))
+      else if (seed.claim === 'once') badge = h('span', { style: S.muted }, t('onceOnly'))
       else if (seed.claim === 'auto' || seed.claim === 'link') badge = h('span', {
         style: typeof row.dailyRemaining === 'number' && row.dailyRemaining > 0 ? S.ok : S.muted,
       }, typeof row.dailyRemaining === 'number' && row.dailyRemaining > 0 ? t('autoGranted') : t('autoPending'))
@@ -1725,7 +1860,9 @@ window.__ModuleLoader__.load({
         h('span', { style: S.muted }, t('creditUnit')),
         verifiedDelta ? h('span', { style: S.ok }, '+' + formatCredit(verifiedDelta)) : null,
         h('span', { style: { width: 74, textAlign: 'right' } }, badge),
-        seed.claim === 'once'
+        seed.claim === 'none'
+          ? h('span', { style: { ...S.iconBtn, opacity: 0.4, cursor: 'default', width: 62, textAlign: 'center' } }, t('notSupported'))
+          : seed.claim === 'once'
           ? h('span', { style: { ...S.iconBtn, opacity: 0.4, cursor: 'default', width: 62, textAlign: 'center' } }, t('claim'))
           : seed.claim === 'link'
           ? h('a', {
@@ -1887,7 +2024,7 @@ window.__ModuleLoader__.load({
           if (!seed) continue
           // A one-time-reward platform has nothing to check in, so it must not
           // inflate the denominator; a disabled account is not a missed day.
-          const counts = seed.claim !== 'once' && seed.claim !== 'auto' && seed.claim !== 'link'
+          const counts = seed.claim !== 'once' && seed.claim !== 'auto' && seed.claim !== 'link' && seed.claim !== 'none'
           for (const row of state.accounts || []) {
             if (typeof row.credit === 'number') credit += row.credit
             if (!counts || row.active === false) continue

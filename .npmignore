@@ -1,0 +1,7 @@
+# 打包边界。`files` 已经是白名单，这里是第二道闸：任何以 .bak- 结尾的本地备份都
+# 不该进 tarball——2026-11-16 的 0.1.2 第一次 stage 就把
+# `README.md.bak-…-pre-caution` 带进去了（npm 会把 README 的兄弟文件当作 readme 一并
+# 收集），等于把旧版内容随包发出去。测试目录也不发布。
+*.bak-*
+*.bak
+test/

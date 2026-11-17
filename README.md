@@ -33,9 +33,10 @@
 | 平台 | 数据来自 | 推荐 |
 |---|---|---|
 | Loomy · MiniMax Code · Qoder 国际 · Qoder 中国 · Raccoon (商汤) | [`dsh-our-free-model`](https://github.com/Ebony-Vinyl/dsh-our-free-model) 的 channel-pack RPC | ✅ 强烈推荐 |
-| **Trae（CN）** | [`dsh-connect-trae`](https://github.com/dingminhua/dsh-connect-trae) 的 `/usage` 文档 | ✅ 推荐（比 channel-pack 多签到状态与厂商包名） |
+| **Trae（国内版 / 国际版）** | [`dsh-connect-trae`](https://github.com/dingminhua/dsh-connect-trae) 的 `/usage` 文档（`?region=cn` / `?region=ai`） | ✅ 推荐（比 channel-pack 多签到状态与厂商包名） |
 | WorkBuddy（腾讯 CodeBuddy，**国内版 + 国际服**） | [`dsh-connect-workbuddy`](https://github.com/dingminhua/dsh-connect-workbuddy) | ✅ 推荐（`?region=cn` 与 `?region=global` 是两条独立账号池，面板各占一行） |
 | CodeArts（华为云） | [`dsh-codearts`](https://github.com/elegant01/dsh-codearts) | 可选 |
+| TeleAgent（中国电信天翼 AI 星辰） | [`dsh-connect-teleagent`](https://github.com/alvinhuang0509-design/dsh-connect-teleagent) 的 `/api/teleagent-connect` RPC | ⚠️ **待验证**（新接入，作者仍在实测；读 `credits.balance` / `credits.status`，领取走 `credits.claim`） |
 | WPS 灵犀 | 本插件自带（读灵犀桌面端 Cookies，或手填 `wps_sid`） | 可选 |
 | MobileClaw（移动云震泽） | 本插件自带（读 App 自己的日志） | 可选 |
 
@@ -54,13 +55,15 @@
 | WorkBuddy（国内版） | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 逐包 | 签到 100/天，30 天有效 |
 | WorkBuddy 国际服 | ✅ 每账号 | ✅ 账号级 | ✅ **仅当前账号** | ✅ 实测余额 | 月度免费包 **100 积分 · 每月刷新**；签到活动当前未开启（`active: false`） |
 | Trae（CN） | ✅ | ✅ **账号级** | ✅ | ✅ 逐包 | 签到 100/天，30 天有效；读 `dsh-connect-trae` 的 usage |
-| Qoder 国际 / 中国 | ✅ 汇总 | ✅ | ✅ | ⚠️ 仅汇总 | 每日 10:00 刷新；逐包明细接口不提供，走官网 |
+| Trae 国际版 | — 无积分池 | — 不支持签到 | — | ⚠️ 无数字可核 | **免费档 + 按美元计费**（`payIdentityStr: Free`、`isDollarUsageBilling: true`）。上游这个接口只给套餐档位（Free/Pro），不下发额度数值，所以这一行只显示账号与「无积分池」，右侧「积分详情」按钮直达国际服官网 |
+| Qoder 国际 / 中国 | ✅ 汇总 | ✅ | ✅ | ⚠️ 仅汇总 | 每日 10:00 刷新（`refreshHourUtc8`）。上游 `/me/usage` 里 `userQuota` / `addOnQuota` 是汇总，只有 `dedicatedResourcePackages` 才是逐条；而 `displayMode: enterprise` 时插件直接返回 null，**企业号读不到任何额度**——官网 usage 页仍可看 |
 | Loomy | ✅ 永久池 + 每日池 | ✅ | ✅ 每日额度初始化 | ✅ 实测 | 每日池 5000，登录后重置 |
 | Raccoon (商汤) | ✅ 奖励池 + 每日池 | ✅ 每日池已发放 | — 走网页 | ✅ 流水归纳 | 每日 300 有两个来源：服务端自动发放（约 1 天）、网页签到（7 天）；桌面端无可用签到接口 |
 | CodeArts | ✅ 套餐剩余 + 过期日 | ✅ 每日福利 | ✅ | ⚠️ 仅汇总 | 签到 100/天；批次明细走官网 |
-| MiniMax Code | ✅ | ✅ 账号级 | ✅ | ✅ 签到 | **有效期未验证** |
-| WPS 灵犀 | ✅ 累计智点 | ✅ 连续天数 | ✅ | ⚠️ 未实测 | **有效期未验证**；需灵犀已登录或手填 sid |
-| MobileClaw | ✅ token 余额 | ✅ 今日打卡礼是否到账 | — 只读 | ✅ 日志 | 打卡礼 100 万 token/天，30 天有效 |
+| MiniMax Code | ✅ | ✅ 账号级 | ✅ | ✅ 签到 | **签到 400/天，连签日 1000 · 1 个月有效**（7 次实测：400 400 400 **1000** 400 400 **1000**；`claim` 回 `points`，数值由上游给） |
+| WPS 灵犀 | ✅ 累计智点 | ✅ 连续天数 | ✅ | ⚠️ **未实测** | **有效期未验证 · 未经详实测试**；需灵犀已登录或手填 sid |
+| MobileClaw | ✅ token 余额 | ✅ 今日打卡礼是否到账 | — 只读 | ✅ 日志 | 打卡礼 100 万 token/天，30 天有效；**未经详实测试** |
+| TeleAgent (天翼 AI) | ✅ | ✅ 今日是否已领 | ✅ | ⚠️ **未经详实测试** | 每日签到 **100/天**（额度由上游下发，`dailyClaimablePoints`）；刚接入、仍在实测，**未登录或 token 过期时这一行会占位提示**，而不是报「读取失败」 |
 
 ---
 
@@ -94,8 +97,9 @@ dsh plugin --profile <你的 profile> remove dsh-cyberegg
 - **到期预警**：按「到期日」逐日归并，只统计 3 天内的金额；CodeArts 这种只给汇总额的，单独显示「周期末总共作废 + 到期日」。展开可看每天到期的具体金额
 - **近两天历史**：每个平台展开后底部有近两天的总积分变化，用来事后核对
 - **平台备注**：每行下面一行小字说明「签到给多少 + 有效期」，无法验证的会明确写「有效期未验证」
-- **默认顺序**：Loomy → WorkBuddy → WorkBuddy 国际服 → CodeArts（华为云）→ Qoder 中国 → Qoder 国际服 → Raccoon（商汤）→ Trae → MiniMax → WPS 灵犀 → MobileClaw。拖动即可改成你自己的顺序
-- **默认隐藏**：**WPS 灵犀与 MobileClaw（中国移动）默认隐藏**——它们读的是本机 App 的数据，不常开就少占两行；底部「已隐藏：…」一点即恢复，位置不会丢
+- **积分详情**：每行右侧的「积分详情」按钮直达该平台自己的用量/账单页——Loomy、WorkBuddy（国内 / 国际）、CodeArts、Qoder（中国 / 国际）、Raccoon、Trae（国内 / 国际）、MiniMax、WPS 灵犀、TeleAgent 全都有；**只有 MobileClaw 没有**（它没有公开的用量页，数据来自本机日志）
+- **默认顺序**：Loomy → WorkBuddy → WorkBuddy 国际服 → CodeArts（华为云）→ Qoder 中国 → Qoder 国际服 → Raccoon（商汤）→ Trae → Trae 国际版 → MiniMax → WPS 灵犀 → MobileClaw → TeleAgent。拖动即可改成你自己的顺序
+- **默认隐藏**：**WorkBuddy 国际服、Trae 国际版、WPS 灵犀、MobileClaw（中国移动）默认隐藏**——前两个只在你登录过对应国际区时才有内容（国际版还只有套餐档位、没有积分数字），后两个读的是本机 App 的数据；底部「已隐藏：…」一点即恢复，位置不会丢
 
 ---
 
@@ -122,7 +126,7 @@ curl -X POST "http://127.0.0.1:<DSH端口>/plugins/dsh-cyberegg/lingxi?action=si
 
 - 面板里出现的只有**数字**。`wps_sid` 只存在于 Host 半身内存与上面那个 `lingxi-sid.json`（你自己填的），**永远不回传给页面**。
 - 不收集遥测，不发任何自建服务器请求。
-- 所有网络请求都发往各平台官方域名（`lingxi.wps.cn`、`wps.cn`），或本机 loopback。
+- 所有网络请求只发往两处：**本机 loopback**（各依赖插件自己的 `/plugins/`、`/api/` 路由，以及灵犀/MobileClaw 的两个本地读取器），或**平台官方域名**（本插件自己只连 `lingxi.wps.cn` / `wps.cn` 这两个）。本插件不直连任何第三方站点，也没有自建服务器。
 
 ---
 
@@ -150,6 +154,46 @@ curl -X POST "http://127.0.0.1:<DSH端口>/plugins/dsh-cyberegg/lingxi?action=si
 
 - 本插件的读取**刻意串行**（一次只问一个平台）、单次读取 **12 秒超时**，就是为了不主动撞上这些限流；面板每 2 小时才刷一次，也是同一个理由。
 - 以上是作者实测得出的经验，不是上游写在文档里的承诺，随时可能变。
+
+---
+
+## 附：CodeArts 上下文预检的已知 bug（`dsh-codearts`）
+
+用 CodeArts（华为 SNAP）跑长会话、又贴了图时，DSH 可能报 400：
+
+```
+上下文放不下：deepseek-v4.1-flash-1017 的窗口是 1048576 tokens，
+本次请求估算约 1054215 tokens，剩余不足 1024 tokens 的生成余量。
+```
+
+真实占用远没到窗口上限，请求是被**本地预检**拒掉的。这条文案不在 DSH 内置逻辑里，也不来自上游网关——它在 `dsh-codearts` 自己的 `lib/usage-*.mjs`。
+
+**原因**：预检用 `estimateTokens()` 逐字符扫描 `JSON.stringify(body.messages)`（CJK 记 1 token、其余 ÷4），而内联图片是 base64 字符串。一张 105KB 的 JPG 编码后约 14 万字符，按 ÷4 算成 **3.5 万 token**，而多模态模型实际只收 1100～1600 token。十几张图就能凭空多出上百万假 token。**base64 是传输编码，不是 token 来源。**
+
+**必做的修复**
+
+1. 统计前先扫 `image_url` 块，把图片字符数从估算里扣掉，再按张补回真实值（约 1600 token/张）：
+
+```js
+let imageChars = 0
+let imageCount = 0
+for (const message of body.messages ?? []) {
+  if (!Array.isArray(message?.content)) continue
+  for (const block of message.content) {
+    if (block?.type !== 'image_url') continue
+    imageCount += 1
+    if (typeof block.image_url?.url === 'string') imageChars += block.image_url.url.length
+  }
+}
+const rawTokens = estimateTokens(`${JSON.stringify(body.messages ?? '')}${JSON.stringify(body.tools ?? '')}`)
+const promptTokens = Math.max(0, rawTokens - Math.ceil(imageChars / 4) + imageCount * 1600)
+```
+
+位置在 `~/.dsh/profiles/<profile>/node_modules/dsh-codearts/lib/usage-*.mjs` 的预检处（`lib/` 是构建产物）。
+
+2. **锁版本**：把 `package.json` 里的 `"dsh-codearts": "^1.2.10"` 改成 `"1.2.10"`，或走 `pnpm.patchedDependencies`。插件升级**不是覆盖原文件**——`lib/usage-CjPd0Gok.mjs` 那种文件名里的哈希会变，旧 patch 文件会留在目录里但不再被引用，表现就是「修复突然失效」。
+
+> 顺带一句：把 `estimateTokens` 的中文系数从 1 调到 0.7 也能让请求通过（放行量 +43%），但那是**放宽**而不是纠错——本地不拦了，改由上游返 `context too long`。图片那处才是量级修正。另外这套预检整个包在 `if (typeof body.max_tokens === "number")` 里，不带 `max_tokens` 的请求根本不走预检。
 
 ---
 

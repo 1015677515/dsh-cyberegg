@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.3 — 2026-11-17
+
+- **WorkBuddy 国际服改为默认隐藏**：默认隐藏的现在是三行（国际服、WPS 灵犀、MobileClaw）。国际服只有登录过国际区才有数据，平时占一行不太值；底部「已隐藏：…」一点即恢复，位置不丢
+- 默认隐藏仍然只有一个开关：`PLATFORM_SEED` 里的 `defaultHidden: true`，`DEFAULT_HIDDEN` 由它派生
+- **每个平台都补了「积分详情」按钮**（已有 Qoder 中国/国际、CodeArts、Trae 国际版的 4 个保留不动）：新增 Loomy（loomy.xunfei.cn）、WorkBuddy 国内（codebuddy.cn）、WorkBuddy 国际服（workbuddy.ai）、Raccoon（xiaohuanxiong.com）、Trae 国内（trae.cn）、MiniMax（agent.minimax.cn）、WPS 灵犀（lingxi.wps.cn）、TeleAgent（agent.teleai.com.cn）。**MobileClaw 没有**——它没有公开的用量页，数据只来自本机 App 日志
+- TeleAgent 备注写明「每天签到 100 积分」——与插件源码注释里 2026-11-04 的抓包样例 `daily_claimable_points: 100` 一致
+- **新增 TeleAgent（中国电信天翼 AI 星辰）一行**，默认显示、排在最后：走 `dsh-connect-teleagent` 的 `/api/teleagent-connect` RPC（该插件只注册了这一条通道，没有 `/plugins/` 路由）。读 `status` → 未登录/凭据过期就占位给提示（不当成读取失败），已登录才去拉 `credits.balance` + `credits.status`；签到先查 `credits.status.claimed`，今天是已领就直接报「今天已领」，不打扰上游
+- **新增 Trae 国际版一行**（`?region=ai`，默认隐藏）：`readTrae` 与签到原先不带 region，而该路由缺省即国内版——所以以前登录了国际版也读不到。国际版**没有积分池**（`payStatus.payIdentityStr: Free`、`isDollarUsageBilling: true`、`credits` 为空、`checkinSupported: false`），上游只下发套餐档位，因此这一行显示账号与「免费档 · 按美元计费 · 无积分池、不支持签到」，不显示数字
+- `claim: 'none'` 这一档：不支持签到的平台（Trae 国际版）不再渲染签到按钮、也不计入「今日签到」分母
+- **Qoder 备注改成「约 30 天有效（资源包声明，未逐笔核对）」**：原来那句把资源包的静态声明 `validity: RELATIVE_DAYS 30` 写成了确定的「领取后 30 天」，而我们拿不到逐笔的 `validityDays`（它在活动的 `campaign` 对象里，`our-free-model` 的 `claimAll` 不透出）
+
+- **WPS 灵犀、MobileClaw 的备注加「未经详实测试」**：这两条的有效期结论来自少量样本（灵犀本机没登录、MobileClaw 只有几天日志），README 支持矩阵的核对列同步标了「未实测 / 未经详实测试」
+- **TeleAgent 在 README 里标「待验证」，不进「推荐插件」**：推荐仍是三位（`dsh-our-free-model` / `dsh-connect-trae` / `dsh-connect-workbuddy`）。TeleAgent 依赖表写 `⚠️ 待验证`，等实测一段时间再升级说法
+
 ## 0.1.2 — 2026-11-16
 
 - 新增 **WorkBuddy 国际服** 一行（`region=global`），排在 WorkBuddy 下方；国内版与国际服是两条独立账号池，各自读取余额与签到
