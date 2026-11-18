@@ -11,7 +11,7 @@
  * provider: GET /api/public/v1/tasks lists the daily task, POST
  * /api/public/v1/tasks/daily_check_in/claim claims it.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -208,13 +208,41 @@ function sendJson(res, status, body) {
   res.end(payload)
 }
 
+const MAX_BODY_BYTES = 1024 * 1024
+
 async function readBody(req) {
   const chunks = []
-  for await (const chunk of req) chunks.push(chunk)
+  let total = 0
+  for await (const chunk of req) {
+    total += chunk.length
+    if (total > MAX_BODY_BYTES) throw new Error('body too large')
+    chunks.push(chunk)
+  }
   return Buffer.concat(chunks).toString('utf8')
 }
 
+/**
+ * Only the loopback page may talk to these routes.
+ *
+ * A browser tab on any site can reach 127.0.0.1 as well (DNS rebinding walks around
+ * the same-origin policy), and one of these routes *writes* a file. Checking the
+ * socket peer plus the Host header costs nothing for the real page — DSH serves it
+ * on loopback — and keeps a random site from reading the balance snapshot or
+ * overwriting the store.
+ */
+function localRequest(req) {
+  const remote = String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '')
+  const peerOk = remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1'
+  const host = String(req.headers.host || '').toLowerCase()
+  const hostOk = host === '127.0.0.1' || host.startsWith('127.0.0.1:')
+    || host === 'localhost' || host.startsWith('localhost:')
+    || host === '[::1]' || host.startsWith('[::1]:')
+  return peerOk && hostOk
+}
+
 async function handler(req, res) {
+  if (!localRequest(req)) return sendJson(res, 403, { error: 'forbidden' })
+
   const url = new URL(req.url || '/', 'http://127.0.0.1')
   const action = url.searchParams.get('action') || 'status'
   try {
@@ -329,6 +357,8 @@ function readMobileclawStatus() {
 }
 
 async function mobileclawHandler(req, res) {
+  if (!localRequest(req)) return sendJson(res, 403, { error: 'forbidden' })
+
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'method-not-allowed' })
   try {
     return sendJson(res, 200, readMobileclawStatus())
@@ -348,6 +378,7 @@ const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url))
 const MASCOT_FILE = join(PLUGIN_DIR, 'assets', 'cyberegg-mascot.webp')
 
 function mascotHandler(req, res) {
+  if (!localRequest(req)) return sendJson(res, 403, { error: 'forbidden' })
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { 'content-type': 'text/plain; charset=utf-8' })
     return res.end('method not allowed')
@@ -371,6 +402,94 @@ function mascotHandler(req, res) {
   return res.end(req.method === 'HEAD' ? undefined : bytes)
 }
 
+/**
+ * Snapshot store — the one place a day-over-day baseline survives.
+ *
+ * The browser half used to keep credit history in `localStorage`, which is keyed
+ * by origin. DSH picks a different loopback port on many starts (57424 → 59832 →
+ * 65311 within one day, observed), so each restart looked like a fresh install
+ * and the question "did today's grant actually land" lost its baseline — every
+ * row fell back to 未确认. The Host half owns a file instead, and the page only
+ * ever sees numbers.
+ */
+const STORE_ROUTE = '/plugins/dsh-cyberegg/store'
+const STORE_FILE = 'store.json'
+
+function storeFile() {
+  return join(dataDir(), STORE_FILE)
+}
+
+function readStore() {
+  try {
+    const parsed = JSON.parse(readFileSync(storeFile(), 'utf8'))
+    if (parsed && typeof parsed === 'object') return parsed
+  } catch {
+    /* missing or unreadable: an empty store is a valid starting point */
+  }
+  return { version: 1, history: {}, prefs: null, ledger: null }
+}
+
+function writeStore(doc) {
+  try {
+    mkdirSync(dataDir(), { recursive: true })
+    // Write-then-rename: a crash mid-write leaves the previous file intact instead
+    // of a truncated one that every later read would treat as "no store".
+    const file = storeFile()
+    const staging = `${file}.tmp`
+    writeFileSync(staging, JSON.stringify(doc), 'utf8')
+    renameSync(staging, file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Writes are serialised on purpose.
+ *
+ * The page posts `history` and `raw` separately, and a "refresh all" fires that
+ * for every visible platform. Each post is a read-modify-write cycle against one
+ * file, so two overlapping cycles would both read the same document and the
+ * later write would silently drop the earlier one.
+ */
+let storeWriteChain = Promise.resolve()
+
+async function storeHandler(req, res) {
+  if (!localRequest(req)) return sendJson(res, 403, { error: 'forbidden' })
+
+  if (req.method === 'GET') {
+    return sendJson(res, 200, readStore())
+  }
+  if (req.method !== 'POST') {
+    return sendJson(res, 405, { error: 'method not allowed' })
+  }
+  let body
+  try {
+    body = JSON.parse(await readBody(req))
+  } catch {
+    return sendJson(res, 400, { error: 'bad json' })
+  }
+  const job = storeWriteChain.then(() => {
+    const doc = readStore()
+    // `history` / `prefs` / `ledger` are whole-value writes. `raw` is a per-platform
+    // shallow merge instead: the page posts one platform's last upstream answer at
+    // a time, and replacing the whole map would drop the other rows.
+    for (const key of ['history', 'prefs', 'ledger']) {
+      if (body && body[key] !== undefined) doc[key] = body[key]
+    }
+    if (body && body.raw && typeof body.raw === 'object' && !Array.isArray(body.raw)) {
+      doc.raw = { ...(doc.raw && typeof doc.raw === 'object' ? doc.raw : {}), ...body.raw }
+    }
+    doc.version = 1
+    doc.savedAt = Date.now()
+    return writeStore(doc)
+  })
+  storeWriteChain = job.then(() => undefined, () => undefined)
+  const written = await job
+  if (written !== true) return sendJson(res, 500, { error: 'write failed' })
+  return sendJson(res, 200, { ok: true })
+}
+
 export function apply(ctx) {
   ctx.inject(['webServer'], (host) => {
     const server = host.webServer || (host.get && host.get('webServer'))
@@ -379,10 +498,12 @@ export function apply(ctx) {
       const offLingxi = server.register({ kind: 'exact', path: ROUTE, handler })
       const offMobileclaw = server.register({ kind: 'exact', path: MC_ROUTE, handler: mobileclawHandler })
       const offMascot = server.register({ kind: 'exact', path: MASCOT_ROUTE, handler: mascotHandler })
+      const offStore = server.register({ kind: 'exact', path: STORE_ROUTE, handler: storeHandler })
       return () => {
         offLingxi()
         offMobileclaw()
         offMascot()
+        offStore()
       }
     }, 'credit-dashboard: routes')
   })

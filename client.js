@@ -23,6 +23,7 @@ window.__ModuleLoader__.load({
     const STORE_KEY = 'dsh-cyberegg/v1'
     const LEGACY_STORE_KEY = 'dsh-credit-dashboard/v1'
     const HOUR = 3600000
+    const DAY_MS = 24 * HOUR
     const MINUTE = 60000
 
     /**
@@ -57,6 +58,8 @@ window.__ModuleLoader__.load({
       title: '积分与签到',
       subtitle: '本机所有可白嫖平台的剩余积分与每日签到',
       refreshAll: '全部刷新',
+      starRepo: '★ Star',
+      starHint: '在 GitHub 上给本插件点 Star',
       refreshOne: '刷新',
       refreshing: '刷新中…',
       claim: '签到',
@@ -73,6 +76,11 @@ window.__ModuleLoader__.load({
       accountsUnit: '个账号',
       totalCredit: '剩余合计',
       checkedIn: '已签到',
+      todayArrived: '今日到账',
+      notArrived: '未到账',
+      linkPinHint: '点开会记下当前积分，领完回来刷新即可确认到账',
+      pendingEvidence: '待确认',
+      noBaselineNotice: '基线正在建立：今天首次读取余额，明日起可自动判定到账',
       notCheckedIn: '未签到',
       pendingRefresh: '待刷新',
       actionRequired: '需客户端开通',
@@ -84,8 +92,11 @@ window.__ModuleLoader__.load({
       autoTag: '自动',
       openWeb: '去网页签到',
       autoDaily: '每日自动发放 · 当日 24:00 过期',
-      autoGranted: '今日已发放',
-      autoPending: '今日未发放',
+      autoGranted: '自动发放',
+      autoPending: '未自动发放',
+      linkGranted: '已发放',
+      linkPending: '未发放',
+      todayMove: '今日',
       autoAppLaunch: '每日自动发放 · 需每天启动 App',
       expiresToday: '（当日过期）',
       valid7d: '（发放后 7 天有效）',
@@ -102,6 +113,9 @@ window.__ModuleLoader__.load({
       expiryShow: '展开明细',
       expiryHide: '收起',
       expiringCycle: '周期末总共作废',
+      permanentPool: '永久额度',
+      expiringPool: '非永久额度',
+      cycleExpiringPool: '本周期到期额度',
       detail: '积分详情',
       detailHint: '打开官网积分明细页',
       noteLoomy: '每日池 5000 · 每日登录后重置为 5000',
@@ -113,7 +127,9 @@ window.__ModuleLoader__.load({
       noteTraeGlobal: '免费档 · 按美元计费 · 无积分池；详情见国际服官网',
       notSupported: '不支持',
       noteQoder: '每日领 100 · 约 30 天有效（资源包声明，未逐笔核对）',
-      noteCodearts: '签到 100/天 · 套餐周期 30 天，周期末作废',
+      noteCodearts: '默认签到 100/天，具体以实际为主 · 套餐周期 30 天，周期末作废',
+      codeartsExpired: '华为云凭据已过期（access token 只有 2 小时），保活会把 token 续上 —— 稍等或去 CodeArts 卡片重新登录',
+      codeartsExpiredNoKeeper: '华为云凭据已过期，且未开启保活（每 2 小时到期一次）—— 去 CodeArts 卡片重新登录',
       noteMobileclaw: '打卡礼 100 万 token/天 · 30 天有效 · 未经详实测试',
       noteTeleagent: '天翼 AI 星辰 · 每天签到 100 积分（额度以上游为准）',
       noteRaccoon: '每日 300（需网页签到）· 发放后 7 天有效',
@@ -143,6 +159,8 @@ window.__ModuleLoader__.load({
       title: 'Credits & check-in',
       subtitle: 'Remaining credits and daily check-in for every freebie platform on this machine',
       refreshAll: 'Refresh all',
+      starRepo: '★ Star',
+      starHint: 'Star this plugin on GitHub',
       refreshOne: 'Refresh',
       refreshing: 'Refreshing…',
       claim: 'Check in',
@@ -159,6 +177,11 @@ window.__ModuleLoader__.load({
       accountsUnit: 'accounts',
       totalCredit: 'Total remaining',
       checkedIn: 'Checked in',
+      todayArrived: 'Arrived today',
+      notArrived: 'not yet',
+      linkPinHint: 'Remembers the balance when opened — refresh after claiming to confirm',
+      pendingEvidence: 'Pending',
+      noBaselineNotice: 'Building the baseline: this is the first reading today, comparison starts tomorrow',
       notCheckedIn: 'Not yet',
       pendingRefresh: 'Pending refresh',
       actionRequired: 'Needs app activation',
@@ -170,8 +193,11 @@ window.__ModuleLoader__.load({
       autoTag: 'auto',
       openWeb: 'Open web page',
       autoDaily: 'Granted daily · expires 24:00 today',
-      autoGranted: 'Granted today',
-      autoPending: 'Not granted yet',
+      autoGranted: 'Granted automatically',
+      autoPending: 'Not granted automatically',
+      linkGranted: 'Granted',
+      linkPending: 'Not granted',
+      todayMove: 'today',
       autoAppLaunch: 'Granted daily · needs the app launched each day',
       expiresToday: ' (expires today)',
       valid7d: ' (valid 7 days)',
@@ -188,6 +214,9 @@ window.__ModuleLoader__.load({
       expiryShow: 'Show detail',
       expiryHide: 'Hide',
       expiringCycle: 'written off at cycle end',
+      permanentPool: 'permanent',
+      expiringPool: 'non-permanent',
+      cycleExpiringPool: 'expires this cycle',
       detail: 'Detail',
       detailHint: 'Open the official credit detail page',
       noteLoomy: 'daily pool 5000 · resets to 5000 on each login',
@@ -199,7 +228,9 @@ window.__ModuleLoader__.load({
       noteTraeGlobal: 'free tier · billed in USD · no credit pool; see trae.ai for details',
       notSupported: 'n/a',
       noteQoder: 'claim 100 daily · ~30 days (declared by the pack, not verified per claim)',
-      noteCodearts: 'check-in 100/day · 30-day plan cycle, written off at cycle end',
+      noteCodearts: 'default check-in 100/day, actual amount varies · 30-day plan cycle, written off at cycle end',
+      codeartsExpired: 'Huawei Cloud credentials expired (access token lasts 2 hours); keep-alive renews it — wait a moment or sign in again in the CodeArts card',
+      codeartsExpiredNoKeeper: 'Huawei Cloud credentials expired and keep-alive is off (renews every 2 hours) — sign in again in the CodeArts card',
       noteMobileclaw: 'daily token gift 1M/day · valid 30 days · not thoroughly tested',
       noteTeleagent: 'Telecom AI TeleAgent · 100 credits per daily check-in (amount from upstream)',
       noteRaccoon: 'daily 300 (claim on the web page) · valid 7 days',
@@ -227,13 +258,16 @@ window.__ModuleLoader__.load({
 
     /** Platforms in default display order (most productive freebies first). */
     const PLATFORM_SEED = [
-      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', dailyQuota: 5000, dailyNote: 'expiresToday', detailUrl: 'https://loomy.xunfei.cn', note: 'noteLoomy' },
-      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'cn', detailUrl: 'https://www.codebuddy.cn', note: 'noteWorkbuddy' },
+      // Loomy's 5000/day lands by itself (channel-pack claims it), so it is an
+      // automatic grant, not something to press. Same evidence rule as any other
+      // grant: only a real balance move today counts as delivered.
+      { id: 'loomy', label: 'Loomy', provider: 'loomy', kind: 'pack', needs: 'dsh-our-free-model', claim: 'auto', dailyQuota: 5000, dailyNote: 'expiresToday', dailyResetDaily: true, detailUrl: 'https://loomy.xunfei.cn', note: 'noteLoomy' },
+      { id: 'workbuddy', label: 'WorkBuddy', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'cn', detailUrl: 'https://www.workbuddy.cn/profile/plans-usage', note: 'noteWorkbuddy' },
       { id: 'workbuddyglobal', label: 'WorkBuddy 国际服', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'global', detailUrl: 'https://www.workbuddy.ai', note: 'noteWorkbuddyGlobal', defaultHidden: true },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
       { id: 'qoder', label: 'Qoder 国际服', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
-      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', detailUrl: 'https://xiaohuanxiong.com/work/home', note: 'noteRaccoon' },
+      { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', dailyValidDays: 7, detailUrl: 'https://xiaohuanxiong.com/work/home', note: 'noteRaccoon' },
       { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', region: 'cn', detailUrl: 'https://www.trae.cn', note: 'noteTrae' },
       { id: 'trae-global', label: 'Trae 国际版', kind: 'trae', needs: 'dsh-connect-trae', region: 'ai', detailUrl: 'https://www.trae.ai', note: 'noteTraeGlobal', defaultHidden: true, claim: 'none' },
       { id: 'minimax', label: 'MiniMax Code', provider: 'minimax', kind: 'pack', needs: 'dsh-our-free-model', detailUrl: 'https://agent.minimax.cn', note: 'noteMinimax' },
@@ -309,35 +343,87 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function loadPrefs() {
+    /**
+     * Normalise a stored preferences document against the current seed shape.
+     * Used both for `localStorage` and for the Host store, so a document written
+     * by an older build never buries a newly added row at the bottom.
+     */
+    function normalizePrefs(parsed) {
       const base = freshPrefs()
+      if (!parsed || typeof parsed !== 'object') return base
+      const known = new Set(base.order)
+      const collapsed = parsed.collapsed && typeof parsed.collapsed === 'object' ? parsed.collapsed : {}
+      const intervals = parsed.intervals && typeof parsed.intervals === 'object' ? parsed.intervals : {}
+      const hidden = parsed.hidden && typeof parsed.hidden === 'object' ? parsed.hidden : {}
+      let order = base.order
+      if (Number(parsed.version) === PREFS_VERSION && Array.isArray(parsed.order)) {
+        order = parsed.order.filter((id) => known.has(id))
+        // A row added without a version bump still must not vanish.
+        for (const id of base.order) if (!order.includes(id)) order.push(id)
+      }
+      // Defaults are a floor, never an override: an explicit choice the user
+      // made (including `false`) wins over `defaultHidden`.
+      return { version: PREFS_VERSION, order, collapsed, intervals, hidden: { ...base.hidden, ...hidden } }
+    }
+
+    function loadPrefs() {
       try {
         const raw = window.localStorage.getItem(STORE_KEY) || window.localStorage.getItem(LEGACY_STORE_KEY)
-        if (!raw) return base
-        const parsed = JSON.parse(raw)
-        const known = new Set(base.order)
-        const collapsed = parsed.collapsed && typeof parsed.collapsed === 'object' ? parsed.collapsed : {}
-        const intervals = parsed.intervals && typeof parsed.intervals === 'object' ? parsed.intervals : {}
-        const hidden = parsed.hidden && typeof parsed.hidden === 'object' ? parsed.hidden : {}
-        let order = base.order
-        if (Number(parsed.version) === PREFS_VERSION && Array.isArray(parsed.order)) {
-          order = parsed.order.filter((id) => known.has(id))
-          // A row added without a version bump still must not vanish.
-          for (const id of base.order) if (!order.includes(id)) order.push(id)
-        }
-        // Defaults are a floor, never an override: an explicit choice the user
-        // made (including `false`) wins over `defaultHidden`.
-        return { version: PREFS_VERSION, order, collapsed, intervals, hidden: { ...base.hidden, ...hidden } }
+        if (!raw) return freshPrefs()
+        return normalizePrefs(JSON.parse(raw))
       } catch {
-        return base
+        return freshPrefs()
       }
     }
+
+    const STORE_ROUTE = '/plugins/dsh-cyberegg/store'
+
+    let storePatch = null
+    let storeFlush = null
+    let storeChain = Promise.resolve()
+
+    /**
+     * Mirror one slice into the Host store, coalesced.
+     *
+     * A single refresh posts twice (balance history + raw diagnostic) and "refresh
+     * all" does that for every visible platform — eighteen read-modify-write cycles
+     * against one file, several of them overlapping. They are merged here and sent
+     * one at a time, so the Host never has to reconcile concurrent writers.
+     */
+    function persistToHost(patch) {
+      if (!patch || typeof patch !== 'object') return
+      const next = storePatch || {}
+      for (const key of Object.keys(patch)) {
+        // `raw` is keyed per platform: merge, never replace, or one platform's
+        // payload would erase the others collected in the same window.
+        if (key === 'raw' && patch.raw && typeof patch.raw === 'object') {
+          next.raw = { ...(next.raw || {}), ...patch.raw }
+        } else {
+          next[key] = patch[key]
+        }
+      }
+      storePatch = next
+      if (storeFlush !== null) return
+      storeFlush = setTimeout(() => {
+        storeFlush = null
+        const sending = storePatch
+        storePatch = null
+        if (!sending) return
+        storeChain = storeChain
+          .then(() => httpPost(STORE_ROUTE, sending))
+          .catch(() => {
+            /* a failed mirror must never break the panel */
+          })
+      }, 150)
+    }
+
     function savePrefs(prefs) {
       try {
         window.localStorage.setItem(STORE_KEY, JSON.stringify(prefs))
       } catch {
         /* storage is optional; the dashboard still works without it */
       }
+      persistToHost({ prefs })
     }
 
     /**
@@ -368,6 +454,7 @@ window.__ModuleLoader__.load({
       } catch {
         /* storage is optional */
       }
+      persistToHost({ ledger })
     }
     function describeClaim(payload) {
       if (!payload || typeof payload !== 'object') return 'claimed'
@@ -403,6 +490,7 @@ window.__ModuleLoader__.load({
       } catch {
         /* storage is optional */
       }
+      persistToHost({ history })
     }
 
     /** The ledger row for one account, only when it belongs to today. */
@@ -410,6 +498,50 @@ window.__ModuleLoader__.load({
       if (!ledger || ledger.date !== todayKey()) return undefined
       const rows = ledger.rows || {}
       return rows[platformId + '|' + accountId]
+    }
+
+    /**
+     * Today's credit move for one account — the **only** evidence this panel
+     * accepts as proof that a daily grant actually landed.
+     *
+     * Two sources, both about the balance, never about an upstream "ok":
+     *
+     *  1. the claim ledger, which stores the before/after difference measured
+     *     around a manual claim made here (hard evidence, same run);
+     *  2. the daily snapshot history, comparing today's total against the last
+     *     recorded day — this is what catches grants made on the website, or by
+     *     vendors that hand out credit on their own.
+     *
+     * `delta === undefined` means "no baseline", which is a different answer from
+     * `0`. A row must not claim "no change" when nobody was watching.
+     */
+    function dailyMoveOf(history, platformId, ledger, accountId) {
+      const local = ledgerEntryOf(ledger, platformId, accountId)
+      if (local && typeof local.delta === 'number') return { delta: local.delta, source: 'ledger' }
+      const entries = (history && history[platformId]) || []
+      const today = todayKey()
+      let todayEntry = null
+      let previousEntry = null
+      for (const entry of entries) {
+        if (!entry || typeof entry.total !== 'number') continue
+        if (entry.date === today) todayEntry = entry
+        else previousEntry = entry
+      }
+      if (!todayEntry) return { delta: undefined, source: '' }
+      // The baseline is "the balance at the start of today". The last reading from
+      // an earlier day is that value — it is the observation closest to midnight.
+      // Today's own first reading is a *worse* baseline: if the grant happened
+      // before the panel was opened (Raccoon: 6186 → 6486, first = 6486), the first
+      // reading already contains the grant and the comparison says "no change".
+      const baseline = previousEntry && typeof previousEntry.total === 'number'
+        ? previousEntry.total
+        : (typeof todayEntry.first === 'number' ? todayEntry.first : undefined)
+      if (typeof baseline !== 'number') return { delta: undefined, source: '' }
+      // `peak` is the highest reading of today, so "it went up and was spent again"
+      // still counts as arrived; `net` is what the row shows, since that is the
+      // number a person actually compares.
+      const peak = typeof todayEntry.max === 'number' ? todayEntry.max : todayEntry.total
+      return { delta: peak - baseline, net: todayEntry.total - baseline, source: 'history' }
     }
 
     /** Provider-level check-in verdict taken from today's auto-check-in sentence. */
@@ -423,27 +555,59 @@ window.__ModuleLoader__.load({
         const parsed = parseChannelText(channelState.text)
         return parsed ? (parsed.applicable ? parsed.checked : null) : null
       }
-      return auto ? false : null
+      // `auto` exists but today's run has not happened yet: that is "unknown", not
+      // "not granted". Reporting `false` here made a fresh install — where the
+      // channel-pack file is yesterday's or absent — claim every pack row was
+      // skipped today.
+      return auto && auto.lastDate === today ? false : null
     }
 
     /**
      * One account's "done today" verdict — the single source both the row badge
      * and the header counters read, so they can never disagree.
      *
-     * Any source that positively confirms today wins; none of them may veto
-     * another. A measured increase OR an upstream "changed today" is enough —
-     * the ledger only adds evidence that the weaker providers cannot show.
+     * Two kinds of evidence are accepted:
+     *
+     *  1. the balance really moved today (`dailyMoveOf` — ledger delta or the
+     *     daily snapshot difference);
+     *  2. upstream says today's grant already happened: its own status field
+     *     (`checkedIn`), the channel's own sentence ("1 个 +400积分" / "今天已领"),
+     *     or a claim call that answered "already claimed".
+     *
+     * What is still NOT evidence: "the daily pack still has credit left". A
+     * 7-day pack carries yesterday's grant, which is why Raccoon used to show
+     * 今日已发放 for days on end while the channel had no check-in at all.
      */
-    function isRowDone(row, seed, auto, ledger) {
+    /**
+     * Whether *anything at all* was observed about today for this account.
+     *
+     * Separate question from "did it arrive", and the one a fresh install trips
+     * over: with no stored baseline there is nothing to compare, so the honest
+     * answer is 待确认 — not 未发放. Saying the latter asserts a fact the panel
+     * never saw.
+     */
+    function hasEvidenceOf(row, seed, ledger, history, auto) {
+      const move = dailyMoveOf(history, seed.id, ledger, row.accountId)
+      if (typeof move.delta === 'number') return true
+      if (typeof row.dailyGrantedMs === 'number') return true
+      if (ledgerEntryOf(ledger, seed.id, row.accountId)) return true
+      if (row.statusKnown && row.checkedIn !== undefined) return true
+      if (providerCheckOf(seed, auto) !== null) return true
+      return false
+    }
+
+    function isRowDone(row, seed, ledger, history, auto) {
+      const move = dailyMoveOf(history, seed.id, ledger, row.accountId)
+      if (typeof move.delta === 'number' && move.delta > 0) return true
+      // Evidence 1b: the daily pack itself says it was handed out today. This is
+      // the only source that works on the first run of a fresh install, after the
+      // baseline was wiped, or when the claim happened on the vendor's website.
+      if (typeof row.dailyGrantedMs === 'number' && dayKeyOf(row.dailyGrantedMs) === todayKey()) return true
       const local = ledgerEntryOf(ledger, seed.id, row.accountId)
-      if (local && typeof local.delta === 'number' && local.delta > 0) return true
       if (local && local.outcome === 'already-claimed') return true
-      if (seed.claim === 'auto' || seed.claim === 'link') {
-        if (typeof row.dailyRemaining === 'number') return row.dailyRemaining > 0
-      }
-      if (row.statusKnown) return row.checkedIn === true
-      if (local) return false
-      return providerCheckOf(seed, auto) === true
+      if (row.statusKnown && row.checkedIn === true) return true
+      if (providerCheckOf(seed, auto) === true) return true
+      return false
     }
 
     // ── transport ─────────────────────────────────────────────────────────
@@ -578,6 +742,52 @@ window.__ModuleLoader__.load({
       return undefined
     }
     /** Balance snapshot → { total, packages[] } no matter which platform made it. */
+    /**
+     * When today's daily grant was handed out, inferred from the packs themselves.
+     *
+     * Vendors stamp the expiry on the daily pack, which makes the grant date
+     * recoverable without any stored history:
+     *
+     *  - a pack that dies at 24:00 (`dailyResetDaily`) can only be today's — the
+     *    one from yesterday would already be gone;
+     *  - a pack valid for N days (`dailyValidDays`) was granted N days before it
+     *    expires, so `expireMs - N` is the grant moment.
+     *
+     * Takes **all** daily packs and returns the **latest** grant, not the first
+     * one found: Raccoon keeps 7 days of them side by side (11-18, 11-17, 11-16 …
+     * all still valid at once), so "the first daily pack in the array" is
+     * whichever order the vendor happens to serialise — and picking the oldest
+     * makes today's grant look like it happened six days ago.
+     */
+    function dailyGrantOf(seed, dailies) {
+      const list = Array.isArray(dailies) ? dailies : []
+      const now = Date.now()
+      let latest
+      for (const daily of list) {
+        if (!daily || typeof daily.expireMs !== 'number') continue
+        let granted
+        if (seed && seed.dailyResetDaily === true) {
+          granted = daily.expireMs > now ? now : undefined
+        } else {
+          const days = firstNum(seed && seed.dailyValidDays)
+          if (days === undefined || days <= 0) continue
+          // "Valid until 11-24 24:00" and "until 11-25 00:00" are the same instant,
+          // but a vendor may serialise either. Both readings are computed and the
+          // latest one that is not in the future wins — that resolves the boundary
+          // without guessing which convention this vendor uses.
+          const candidates = [
+            daily.expireMs - days * DAY_MS,
+            daily.expireMs + DAY_MS - days * DAY_MS,
+          ].filter((ms) => ms <= now)
+          if (candidates.length === 0) continue
+          granted = Math.max(...candidates)
+        }
+        if (granted === undefined) continue
+        if (latest === undefined || granted > latest) latest = granted
+      }
+      return latest
+    }
+
     function shapeBalance(balance, extra) {
       if (balance === null || balance === undefined) {
         const fallback = extra && typeof extra === 'object' ? extra : {}
@@ -650,9 +860,12 @@ window.__ModuleLoader__.load({
     }
 
     /** Today's date key in UTC+8, the clock every channel bills on. */
-    function todayKey() {
-      const shifted = new Date(Date.now() + 8 * HOUR)
+    function dayKeyOf(ms) {
+      const shifted = new Date(ms + 8 * HOUR)
       return shifted.toISOString().slice(0, 10)
+    }
+    function todayKey() {
+      return dayKeyOf(Date.now())
     }
 
     /**
@@ -698,8 +911,12 @@ window.__ModuleLoader__.load({
         // The daily pool is granted upstream (网页端 +300/天, valid until
         // 24:00); channel-pack exposes it only as a named package, never as a
         // claim call, so the panel reports it instead of pretending to claim it.
-        const daily = (balance && balance.packages ? balance.packages : [])
-          .find((entry) => typeof entry.name === 'string' && (entry.name.includes('每日') || /daily/i.test(entry.name)))
+        // Every "daily" pack, newest expiry first. Raccoon keeps a week of them alive
+        // at once, so the row must read the newest one — that is today's grant.
+        const dailies = (balance && balance.packages ? balance.packages : [])
+          .filter((entry) => typeof entry.name === 'string' && (entry.name.includes('每日') || /daily/i.test(entry.name)))
+          .sort((left, right) => (right.expireMs || 0) - (left.expireMs || 0))
+        const daily = dailies.length > 0 ? dailies[0] : undefined
         // Nearest still-valid package expiry: Trae/Qoder carry it per package
         // (`deductionEndTime` / `expiredTime`), MiniMax only in its status.
         const nearestFuture = (balance && balance.packages ? balance.packages : [])
@@ -715,6 +932,10 @@ window.__ModuleLoader__.load({
           credit: balance ? balance.total : undefined,
           packages: balance ? balance.packages : [],
           dailyRemaining: daily ? daily.remaining : undefined,
+          // When today's grant was handed out, inferred from the packs themselves —
+          // the only way to answer the question on the first run, after a storage
+          // reset, or for a claim made in a browser we never watched.
+          dailyGrantedMs: dailyGrantOf(platform, dailies),
           expiry: statusEnd || formatDate(nearestFuture),
           checkedIn: status ? status.todayCheckedIn === true : undefined,
           streakDays: status ? firstNum(status.streakDays) : undefined,
@@ -905,11 +1126,26 @@ window.__ModuleLoader__.load({
       const welfare = snapshot && snapshot.welfare ? snapshot.welfare : null
       const remain = credits && credits.total ? firstNum(credits.total.remain) : undefined
       const expiring = credits && credits.total ? firstNum(credits.total.expiring) : undefined
+      // Three buckets, not two. `basic` never expires, `bonus` dies with the
+      // cycle, and `total.expiring` is the part of that balance the upstream
+      // marks as written off on `periodEnd` — a subset of `bonus`, shown on
+      // purpose: "how much dies with this cycle" is the number people budget on.
+      const pools = []
+      for (const part of ['basic', 'bonus']) {
+        const bucket = credits && credits[part] ? credits[part] : null
+        const value = bucket ? firstNum(bucket.remain) : undefined
+        if (typeof value === 'number') pools.push({ key: part, remaining: value })
+      }
+      const cycleExpiring = credits && credits.total ? firstNum(credits.total.expiring) : undefined
+      if (typeof cycleExpiring === 'number' && cycleExpiring > 0) {
+        pools.push({ key: 'expiring', remaining: cycleExpiring })
+      }
       return {
         accountId: String(accountId),
         nickname: String(name || accountId),
         credit: remain,
         expiring,
+        pools,
         packages: [],
         expiry: credits && credits.periodEnd ? String(credits.periodEnd).slice(0, 10) : '',
         checkedIn: welfare ? welfare.claimedToday === true : undefined,
@@ -920,10 +1156,10 @@ window.__ModuleLoader__.load({
       }
     }
 
-    async function readCodearts(platform, force) {
-      // `force` is reserved for an explicit refresh: the plugin keeps its own
-      // TTL cache, and bypassing it on every scheduled read would pay upstream
-      // for a number that is already two minutes old at worst.
+    /**
+     * One status read. `force` bypasses the plugin's own 60-second cache.
+     */
+    async function readCodeartsOnce(force) {
       const url = '/api/codearts/status' + (force === true ? '?force=1' : '')
       const response = await fetchWithDeadline(url, { headers: { Accept: 'application/json' } })
       let payload = null
@@ -936,6 +1172,38 @@ window.__ModuleLoader__.load({
         return { accounts: [], error: 'HTTP ' + response.status + (why ? ' ' + why : ''), raw: payload }
       }
       if (payload && payload.status === 'signed-out') return { accounts: [], error: '', raw: payload }
+      // `expired` is not "not logged in": the account is still there, its access
+      // token (2 hours) just ran out — and in that shape the payload carries NO
+      // `credits` and NO `creditsByAccount`, only `accounts`. Reading it as normal
+      // data produces a row with a name and no number: the panel showed a bare
+      // "—" with no reason given, which is exactly what got reported as "signed in
+      // but nothing shows". Say what happened and what to do instead.
+      if (payload && payload.status === 'expired') {
+        const keeperAlive = payload.keeper && payload.keeper.alive === true
+        const errorKey = keeperAlive ? 'codeartsExpired' : 'codeartsExpiredNoKeeper'
+        const rows = Array.isArray(payload.accounts) ? payload.accounts : []
+        const accounts = rows.map((account) => ({
+          accountId: String((account && account.id) || 'codearts'),
+          nickname: String((account && (account.label || account.userName)) || (account && account.id) || 'CodeArts'),
+          credit: undefined,
+          expiring: undefined,
+          pools: [],
+          packages: [],
+          expiry: '',
+          checkedIn: undefined,
+          actionRequired: false,
+          // `needLogin` does double duty here and both halves are right for an
+          // expired token: the badge says "needs sign-in" instead of a vague
+          // "unknown", and the row's check-in button greys out because a claim
+          // cannot succeed on a credential that is not signable any more.
+          needLogin: true,
+          active: true,
+          statusKnown: false,
+          error: '',
+          errorKey,
+        }))
+        return { accounts, error: '', raw: payload }
+      }
       const list = Array.isArray(payload && payload.accounts) ? payload.accounts : []
       const byId = new Map(
         (Array.isArray(payload && payload.creditsByAccount) ? payload.creditsByAccount : [])
@@ -960,6 +1228,24 @@ window.__ModuleLoader__.load({
         ? (payload && payload.creditsError ? String(payload.creditsError) : 'empty payload')
         : ''
       return { accounts, error, raw: payload }
+    }
+
+    /**
+     * CodeArts, with one escape hatch the plain read cannot offer.
+     *
+     * "Just signed in, still shows nothing" is the reported symptom, and it has
+     * a mechanical cause: CodeArts keeps its own 60-second status cache, so the
+     * first read after signing in can still answer with the pre-login state.
+     * When the answer is `signed-out` or `expired` and this was not already a
+     * forced read, read once more with `?force=1`. One extra request, only in
+     * those two states, buys the whole "signed in but blank" case.
+     */
+    async function readCodearts(platform, force) {
+      const first = await readCodeartsOnce(force === true)
+      if (force === true) return first
+      const status = first && first.raw ? first.raw.status : undefined
+      if (status !== 'signed-out' && status !== 'expired') return first
+      return readCodeartsOnce(true)
     }
 
     /**
@@ -1305,6 +1591,12 @@ window.__ModuleLoader__.load({
       },
       statLabel: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', letterSpacing: '0.02em' },
       statValue: { fontSize: 22, fontWeight: 600, marginTop: 4, fontVariantNumeric: 'tabular-nums' },
+      statNote: { fontSize: 10.5, color: 'var(--dsw-alias-label-secondary)', marginTop: 4, lineHeight: 1.35 },
+      baselineNote: {
+        margin: '8px 0 0', padding: '6px 10px', borderRadius: 7, fontSize: 11.5,
+        color: 'var(--dsw-alias-label-secondary)', background: 'var(--dsw-alias-bg-layer-2)',
+        lineHeight: 1.45,
+      },
       group: {
         border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 12, marginBottom: 10,
         background: 'var(--dsw-alias-bg-layer-1)', overflow: 'hidden',
@@ -1439,6 +1731,15 @@ window.__ModuleLoader__.load({
       if (Math.abs(value) >= 10000) return (value / 1000).toFixed(1) + 'k'
       return String(Math.round(value * 100) / 100)
     }
+    /**
+     * Exact cents, no compact suffix — used for the bucket breakdown, where
+     * `10.1k` would hide which half of the balance is about to expire. The
+     * main number keeps `formatCredit` so the panel stays one visual system.
+     */
+    function formatExact(value) {
+      if (value === undefined || value === null) return '—'
+      return String(Math.round(value * 100) / 100)
+    }
     /** Epoch ms → local (UTC+8) calendar day, the clock these quotas expire on. */
     function formatDate(ms) {
       if (typeof ms !== 'number' || !isFinite(ms) || ms <= 0) return ''
@@ -1482,6 +1783,38 @@ window.__ModuleLoader__.load({
       // Per-platform daily credit totals, kept for the last few days.
       const [history, setHistory] = useState(loadHistory)
 
+      /**
+       * Pull the durable copy from the Host once on mount.
+       *
+       * `localStorage` was the only store and it is keyed by origin, so each DSH
+       * restart on a new loopback port looked like a fresh install: the baseline
+       * behind "did today's grant land" simply disappeared. The Host file does
+       * not care about ports, restarts or browser-profile resets, and wins when
+       * both copies exist.
+       */
+      useEffect(() => {
+        let alive = true
+        httpGet(STORE_ROUTE).then((doc) => {
+          if (!alive || !doc || typeof doc !== 'object') return
+          if (doc.history && typeof doc.history === 'object' && Object.keys(doc.history).length > 0) {
+            try { window.localStorage.setItem(HISTORY_KEY, JSON.stringify(doc.history)) } catch { /* optional */ }
+            setHistory(doc.history)
+          }
+          if (doc.ledger && doc.ledger.date === todayKey()) {
+            try { window.localStorage.setItem(LEDGER_KEY, JSON.stringify(doc.ledger)) } catch { /* optional */ }
+            setLedger(doc.ledger)
+          }
+          if (doc.prefs && typeof doc.prefs === 'object') {
+            const next = normalizePrefs(doc.prefs)
+            try { window.localStorage.setItem(STORE_KEY, JSON.stringify(next)) } catch { /* optional */ }
+            setPrefs(next)
+          }
+        }).catch(() => {
+          /* no store yet — the panel starts from localStorage */
+        })
+        return () => { alive = false }
+      }, [])
+
       const patchPrefs = useCallback((next) => {
         setPrefs((current) => {
           const merged = typeof next === 'function' ? next(current) : { ...current, ...next }
@@ -1518,12 +1851,38 @@ window.__ModuleLoader__.load({
               diag: showRaw === true ? result.raw || null : current[id].diag,
             },
           }))
+          // Keep the last upstream answer per platform on the Host, trimmed.
+          // Diagnosing a wrong verdict ("why does this row think it did not
+          // arrive") needs the real payload, and asking the user to Alt+click and
+          // paste JSON every round is a bad trade.
+          if (result.raw !== undefined && result.raw !== null) {
+            try {
+              persistToHost({ raw: { [id]: JSON.stringify(result.raw).slice(0, 4000) } })
+            } catch { /* diagnosis only */ }
+          }
           const total = totalCreditOf(result.accounts)
           if (total !== undefined) {
             setHistory((current) => {
               const today = todayKey()
-              const kept = (current[id] || []).filter((entry) => entry.date !== today)
-              kept.push({ date: today, total })
+              const list = current[id] || []
+              const previousToday = list.find((entry) => entry.date === today)
+              const kept = list.filter((entry) => entry.date !== today)
+              // `first` keeps today's very first reading instead of overwriting it
+              // on every refresh. Without it a single stored point can only answer
+              // "same as today", never "it moved since I looked".
+              const first = previousToday
+                ? (typeof previousToday.first === 'number' ? previousToday.first : previousToday.total)
+                : total
+              // `max` keeps today's highest reading: with only the latest value, a
+              // grant that was spent again later in the day looks like nothing
+              // happened.
+              const peak = Math.max(
+                typeof previousToday === 'object' && previousToday !== null && typeof previousToday.max === 'number'
+                  ? previousToday.max
+                  : total,
+                total,
+              )
+              kept.push({ date: today, total, first, max: peak })
               kept.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
               const next = { ...current, [id]: kept.slice(-3) }
               saveHistory(next)
@@ -1650,8 +2009,31 @@ window.__ModuleLoader__.load({
         }))
       }, [patchPrefs])
 
+      /**
+       * Pin today's baseline right before the browser leaves for the vendor page.
+       *
+       * A `link` claim happens on a site this panel cannot watch: the balance it
+       * reads afterwards already contains the grant, so there is nothing left to
+       * compare it against. Remembering what the balance was at the moment the
+       * user clicked through is the only honest way to prove the claim landed —
+       * and it rides on `history[platform].first`, which is exactly the value
+       * `dailyMoveOf` already compares the next reading against.
+       */
+      const markLinkBaseline = useCallback((platformId, row) => {
+        if (!row || typeof row.credit !== 'number') return
+        setHistory((current) => {
+          const today = todayKey()
+          const kept = (current[platformId] || []).filter((entry) => entry.date !== today)
+          kept.push({ date: today, total: row.credit, first: row.credit, pinnedAt: Date.now() })
+          kept.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+          const next = { ...current, [platformId]: kept.slice(-3) }
+          saveHistory(next)
+          return next
+        })
+      }, [])
+
       return {
-        prefs, platforms, order, intervalOf, refresh, claim, move, toggleCollapsed, setIntervalFor, toggleHidden, auto, refreshAuto, ledger, history,
+        prefs, platforms, order, intervalOf, refresh, claim, move, toggleCollapsed, setIntervalFor, toggleHidden, auto, refreshAuto, ledger, history, markLinkBaseline,
       }
     }
 
@@ -1671,7 +2053,7 @@ window.__ModuleLoader__.load({
     }
 
     function PlatformRow(props) {
-      const { seed, state, auto, ledger, history, t, interval, onRefresh, onClaim, onInterval, onCollapse, onHide, collapsed, onDragStart, onDrop } = props
+      const { seed, state, auto, ledger, history, historyMap, t, interval, onRefresh, onClaim, onInterval, onCollapse, onHide, collapsed, onDragStart, onDrop, onLinkOpen } = props
       const accounts = state.accounts || []
       const known = accounts.filter((row) => row.credit !== undefined)
       const total = known.reduce((sum, row) => sum + row.credit, 0)
@@ -1690,7 +2072,7 @@ window.__ModuleLoader__.load({
         : (auto ? false : null)
       const today = todayKey()
       const ledgerOf = (accountId) => ledgerEntryOf(ledger, seed.id, accountId)
-      const isDone = (row) => isRowDone(row, seed, auto, ledger)
+      const isDone = (row) => isRowDone(row, seed, ledger, historyMap, auto)
       // The denominator is what can actually check in: a disabled or excluded
       // account never counts as a missed check-in.
       const activeAccounts = accounts.filter((row) => row.active !== false)
@@ -1775,8 +2157,11 @@ window.__ModuleLoader__.load({
             ? h('div', { style: { ...S.row, ...S.rowFirst } }, h('span', { style: S.muted }, t('noAccount')))
             : accounts.map((row, index) => h(AccountLine, {
                 key: row.accountId + ':' + index,
-                seed, row, t, state, index, onClaim, providerChecked, pending,
+                seed, row, t, state, index, onClaim, providerChecked, pending, auto,
+                onLinkOpen,
+                observed: hasEvidenceOf(row, seed, ledger, historyMap, auto),
                 done: isDone(row),
+                move: dailyMoveOf(historyMap, seed.id, ledger, row.accountId),
                 ledgerEntry: ledgerOf(row.accountId) || null,
               })),
           (history && history.length > 0) ? h('div', { style: S.historyRow },
@@ -1798,30 +2183,34 @@ window.__ModuleLoader__.load({
     }
 
     function AccountLine(props) {
-      const { seed, row, t, state, index, onClaim, done, pending, ledgerEntry } = props
+      const { seed, row, t, state, index, onClaim, done, pending, ledgerEntry, move, auto, observed, onLinkOpen } = props
       // Only a measured increase counts as a completed check-in. A claim call
       // that answered "ok" while the balance stayed flat is reported as such.
       const verifiedDelta =
         ledgerEntry && typeof ledgerEntry.delta === 'number' && ledgerEntry.delta > 0
           ? ledgerEntry.delta
           : undefined
-      const effectiveChecked = done === true
+      const confirmed = done === true
+      // "Nothing observed" ≠ "did not arrive". A first-day install has no baseline
+      // to compare against, so the row must say 待确认 instead of asserting a miss.
+      const sawSomething = observed === true
       let badge = null
       if (seed.claim === 'none') badge = h('span', { style: S.muted }, t('notSupported'))
       else if (seed.claim === 'once') badge = h('span', { style: S.muted }, t('onceOnly'))
-      else if (seed.claim === 'auto' || seed.claim === 'link') badge = h('span', {
-        style: typeof row.dailyRemaining === 'number' && row.dailyRemaining > 0 ? S.ok : S.muted,
-      }, typeof row.dailyRemaining === 'number' && row.dailyRemaining > 0 ? t('autoGranted') : t('autoPending'))
+      // 自动发放: said out loud; confirmed by either evidence.
+      else if (seed.claim === 'auto') badge = confirmed
+        ? h('span', { style: S.ok }, t('autoGranted'))
+        : (sawSomething ? h('span', { style: S.idle }, t('autoPending')) : h('span', { style: S.idle }, t('pendingEvidence')))
+      // 不能手动领取（网页端领）: same rule, its own wording.
+      else if (seed.claim === 'link') badge = confirmed
+        ? h('span', { style: S.ok }, t('linkGranted'))
+        : (sawSomething ? h('span', { style: S.idle }, t('linkPending')) : h('span', { style: S.idle }, t('pendingEvidence')))
       else if (row.needLogin) badge = h('span', { style: S.warn }, t('needLogin'))
-      else if (pending && effectiveChecked !== true) badge = h('span', { style: S.warn }, t('pendingRefresh'))
+      else if (pending && confirmed !== true) badge = h('span', { style: S.warn }, t('pendingRefresh'))
       else if (row.actionRequired) badge = h('span', { style: S.warn }, t('actionRequired'))
-      else if (effectiveChecked === true) badge = h('span', { style: S.ok }, t('checkedIn'))
-      else if (ledgerEntry && typeof ledgerEntry.delta !== 'number') badge = h('span', { style: S.idle }, t('unknown'))
-      else if (ledgerEntry && !verifiedDelta && ledgerEntry.outcome === 'already-claimed')
-        badge = h('span', { style: S.muted }, t('alreadyClaimed'))
-      else if (ledgerEntry && !verifiedDelta) badge = h('span', { style: S.warn }, t('claimDelayed'))
-      else if (effectiveChecked === false) badge = h('span', { style: S.warn }, t('notCheckedIn'))
-      else badge = h('span', { style: S.idle }, t('unknown'))
+      else if (confirmed) badge = h('span', { style: S.ok }, t('checkedIn'))
+      else if (sawSomething) badge = h('span', { style: S.warn }, t('notCheckedIn'))
+      else badge = h('span', { style: S.idle }, t('pendingEvidence'))
 
       // Split the pools: Loomy 永久 / 每日赠送, Raccoon 奖励 / 每日, and show that a
       // daily pool dies at 24:00 today instead of implying it can be saved.
@@ -1841,6 +2230,23 @@ window.__ModuleLoader__.load({
       if (others.length === 1) parts.push(formatPool(others[0]))
       else if (others.length > 1 && dailyPack !== undefined) parts.push(formatPool(others[0]))
       if (dailyPack) parts.push(formatPool(dailyPack) + t(seed.dailyNote || 'expiresToday'))
+      // Bucket breakdown (CodeArts: never-expiring `basic`, cycle-bound `bonus`,
+      // and the part of it written off on `periodEnd`). These are not packs, so
+      // they never enter the expiry radar — they only explain the row's total.
+      for (const pool of row.pools || []) {
+        const bucket = pool.key === 'basic'
+          ? t('permanentPool')
+          : (pool.key === 'bonus' ? t('expiringPool') : t('cycleExpiringPool'))
+        parts.push(bucket + ' ' + formatExact(pool.remaining))
+      }
+      // The evidence, in the row itself: a confirmed day has to be able to show
+      // what moved. Shows `net` (today's balance vs the start of the day) rather
+      // than the peak used for the verdict, because that is the number a person
+      // compares; `+` is a grant, a negative number is usage.
+      const shownMove = move && typeof move.net === 'number' ? move.net : (move && move.delta)
+      if (typeof shownMove === 'number' && shownMove !== 0) {
+        parts.push(t('todayMove') + ' ' + (shownMove > 0 ? '+' : '') + formatExact(shownMove))
+      }
       if (typeof row.streakDays === 'number' && row.streakDays > 0) parts.push(t('streak') + ' ' + row.streakDays + ' ' + t('dayUnit'))
       if (row.expiry) parts.push(t('expiry') + ' ' + row.expiry)
       const expiryText = parts.length > 0
@@ -1853,7 +2259,9 @@ window.__ModuleLoader__.load({
         h('div', { style: S.acct },
           h('div', null, row.nickname),
           expiryText ? h('div', { style: S.acctSub }, expiryText) : null,
-          row.error ? h('div', { style: S.err }, row.error) : null,
+          (row.errorKey || row.error)
+            ? h('div', { style: S.err }, row.errorKey ? t(row.errorKey) : row.error)
+            : null,
         ),
         h('span', { style: S.spacer }),
         h('span', { style: S.credit }, formatCredit(row.credit)),
@@ -1869,6 +2277,11 @@ window.__ModuleLoader__.load({
               href: seed.link,
               target: '_blank',
               rel: 'noopener noreferrer',
+              title: t('linkPinHint'),
+              // Pin the balance we can see *before* the browser leaves. Coming
+              // back and refreshing then compares against it, which is the only
+              // way a claim made on the vendor's site can be proven.
+              onClick: () => { if (onLinkOpen) onLinkOpen(seed.id, row) },
               style: {
                 ...S.iconBtn, width: 74, textAlign: 'center', textDecoration: 'none',
                 display: 'inline-block', boxSizing: 'border-box',
@@ -1977,7 +2390,7 @@ window.__ModuleLoader__.load({
     function DashboardPage(props) {
       const { t, backToConversation } = props
       const dash = useDashboard()
-      const { platforms, order, prefs, intervalOf, refresh, claim, move, toggleCollapsed, setIntervalFor, toggleHidden, auto, refreshAuto, ledger, history } = dash
+      const { platforms, order, prefs, intervalOf, refresh, claim, move, toggleCollapsed, setIntervalFor, toggleHidden, auto, refreshAuto, ledger, history, markLinkBaseline } = dash
       const didInit = useRef(false)
       const dragFrom = useRef(null)
       const [mascotFailed, setMascotFailed] = useState(false)
@@ -2016,24 +2429,43 @@ window.__ModuleLoader__.load({
         let credit = 0
         let already = 0
         let claimable = 0
+        let pending = 0
+        const missing = []
         for (const id of order) {
           if (prefs.hidden[id] === true) continue
           const state = platforms[id]
           if (!state || state.status === 'idle') continue
           const seed = PLATFORM_SEED.find((entry) => entry.id === id)
           if (!seed) continue
-          // A one-time-reward platform has nothing to check in, so it must not
-          // inflate the denominator; a disabled account is not a missed day.
-          const counts = seed.claim !== 'once' && seed.claim !== 'auto' && seed.claim !== 'link' && seed.claim !== 'none'
+          // Everything that owes something today counts in the denominator —
+          // manual buttons, web-page claims and automatic grants alike. Only
+          // "nothing to claim" (`none`) and one-off rewards (`once`) stay out.
+          // Leaving `auto` and `link` out was why the header could read 8/8 while
+          // nine rows were on screen and Raccoon had not arrived.
+          const counts = seed.claim !== 'once' && seed.claim !== 'none'
           for (const row of state.accounts || []) {
             if (typeof row.credit === 'number') credit += row.credit
             if (!counts || row.active === false) continue
             claimable++
-            if (isRowDone(row, seed, auto, ledger)) already++
+            if (isRowDone(row, seed, ledger, history, auto)) {
+              already++
+            } else if (hasEvidenceOf(row, seed, ledger, history, auto)) {
+              // Only a row we actually looked at can be called "not arrived".
+              // A row with no evidence is 待确认, and listing it here would say
+              // "missing" about something never observed.
+              if (!missing.includes(seed.label)) missing.push(seed.label)
+            } else {
+              pending += 1
+            }
           }
         }
-        return { credit, already, claimable }
-      }, [order, platforms, auto, ledger, prefs.hidden])
+        // "Baseline ready" means at least one platform has a record from a previous
+        // day: only then can today's reading be compared against anything.
+        const today = todayKey()
+        const baselineReady = Object.keys(history || {})
+          .some((key) => (history[key] || []).some((entry) => entry && entry.date !== today))
+        return { credit, already, claimable, missing, pending, baselineReady }
+      }, [order, platforms, auto, ledger, history, prefs.hidden])
 
       /**
        * Expiry radar: every dated credit pack across visible platforms, plus a
@@ -2158,7 +2590,30 @@ window.__ModuleLoader__.load({
             h('h1', { style: S.title }, t('title')),
             h('p', { style: S.subtitle }, t('subtitle') + '  ·  v5')
           ),
-          h('div', { style: { display: 'flex', gap: 8 } },
+          h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } },
+            /**
+             * A plain link, not a fetch. Opening the repo page is the whole
+             * action: pressing Star stays a GitHub-side gesture, done by the
+             * user in their own session.
+             *
+             * Staying a link is deliberate, not a shortcut. Actually posting
+             * `PUT /user/starred/{owner}/{repo}` needs a PAT, and this package
+             * is built on never holding one — the panel half gets no token and
+             * the host half only reads what other plugins already wrote. A
+             * button that really starred would have to break that.
+             */
+            h('a', {
+              href: 'https://github.com/1015677515/dsh-cyberegg',
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              title: t('starHint'),
+              style: {
+                ...S.iconBtn,
+                display: 'inline-block',
+                boxSizing: 'border-box',
+                textDecoration: 'none',
+              },
+            }, t('starRepo')),
             h('button', { style: S.iconBtn, onClick: refreshAll }, t('refreshAll')),
             h('button', { style: S.iconBtn, onClick: backToConversation }, t('back')),
           ),
@@ -2191,14 +2646,28 @@ window.__ModuleLoader__.load({
             h('div', { style: S.statValue }, formatCredit(totals.credit)),
           ),
           h('div', { style: S.statCard },
-            h('div', { style: S.statLabel }, t('checkedIn')),
+            h('div', { style: S.statLabel }, t('todayArrived')),
             h('div', { style: S.statValue }, totals.already + ' / ' + totals.claimable),
+            // Name what is missing instead of letting the number alone imply
+            // "everything is fine". Capped at three so the card stays one card.
+            totals.missing.length > 0
+              ? h('div', { style: S.statNote },
+                  t('notArrived') + ' ' + totals.missing.slice(0, 3).join(' / ')
+                    + (totals.missing.length > 3 ? ' …' : ''))
+              : null,
           ),
           h('div', { style: S.statCard },
             h('div', { style: S.statLabel }, t('interval')),
             h('div', { style: S.statValue }, DEFAULT_INTERVAL / HOUR + 'h'),
           ),
         ),
+        // A fresh install has no previous reading to compare against, so most rows
+        // can only answer 待确认. Say that once, at the top, instead of leaving the
+        // user to conclude the checker is broken.
+        totals.baselineReady || totals.pending === 0
+          ? null
+          : h('div', { style: S.baselineNote },
+              t('noBaselineNotice') + '（' + totals.pending + ' ' + t('pendingEvidence') + '）'),
         h(ExpiryBar, { t, expiry }),
         h(MissingDeps, { t, groups: missingGroups }),
         order.filter((id) => prefs.hidden[id] !== true).map((id) => {
@@ -2211,6 +2680,11 @@ window.__ModuleLoader__.load({
             auto,
             ledger,
             history: history[id] || [],
+            // The whole map, not this platform's slice: `dailyMoveOf` reads
+            // `history[platformId]`, and handing it the already-flattened array
+            // silently made every delta undefined.
+            historyMap: history,
+            onLinkOpen: markLinkBaseline,
             t,
             interval: intervalOf(id),
             collapsed: prefs.collapsed[id] === true,
