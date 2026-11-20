@@ -50,6 +50,15 @@ window.__ModuleLoader__.load({
     const CLAIM_SETTLE_TOTAL_MS = 6000
     const CLAIM_SETTLE_STEP_MS = 700
 
+    /**
+     * Notice marker for "the vendor itself withdrew this reward", as opposed to
+     * "nothing happened to be claimable right now". The two read the same in the
+     * upstream reply (Qoder answers both with 「当前没有可领取的活动」), but they
+     * are different facts and must not share a sentence: one is permanent, the
+     * other is a snapshot of this minute.
+     */
+    const VENDOR_CANCELED = 'vendor-canceled'
+
     // Copy ships inline because the loader factory can only require the browser
     // module table; locale/*.json stays as the declared resource for the bundle
     // page. Both are the same strings.
@@ -72,6 +81,9 @@ window.__ModuleLoader__.load({
       expiry: '最近过期',
       neverUpdated: '尚未读取',
       noAccount: '没有账号',
+      noAccountBindPrefix: '没有账号，需要在',
+      noAccountBindSuffix: '插件设置界面绑定',
+      noAccountMobileclaw: '没有账号，需要先启动 MobileClaw App 并登录一次',
       creditUnit: '积分',
       accountsUnit: '个账号',
       totalCredit: '剩余合计',
@@ -127,6 +139,8 @@ window.__ModuleLoader__.load({
       noteTraeGlobal: '免费档 · 按美元计费 · 无积分池；详情见国际服官网',
       notSupported: '不支持',
       noteQoder: '每日领 100 · 约 30 天有效（资源包声明，未逐笔核对）',
+      noteQoderGlobal: '官方已取消国际服的每日登录奖励 · 仅剩资源包（约 30 天，未逐笔核对）',
+      qoderCanceled: '官方已取消签到奖励',
       noteCodearts: '默认签到 100/天，具体以实际为主 · 套餐周期 30 天，周期末作废',
       codeartsExpired: '华为云凭据已过期（access token 只有 2 小时），保活会把 token 续上 —— 稍等或去 CodeArts 卡片重新登录',
       codeartsExpiredNoKeeper: '华为云凭据已过期，且未开启保活（每 2 小时到期一次）—— 去 CodeArts 卡片重新登录',
@@ -173,6 +187,9 @@ window.__ModuleLoader__.load({
       expiry: 'Expires',
       neverUpdated: 'Not read yet',
       noAccount: 'No account',
+      noAccountBindPrefix: 'No account — bind one in the',
+      noAccountBindSuffix: 'plugin settings',
+      noAccountMobileclaw: 'No account — launch and sign in to the MobileClaw app first',
       creditUnit: 'credits',
       accountsUnit: 'accounts',
       totalCredit: 'Total remaining',
@@ -228,6 +245,8 @@ window.__ModuleLoader__.load({
       noteTraeGlobal: 'free tier · billed in USD · no credit pool; see trae.ai for details',
       notSupported: 'n/a',
       noteQoder: 'claim 100 daily · ~30 days (declared by the pack, not verified per claim)',
+      noteQoderGlobal: 'Vendor withdrew the daily login reward here · packs only (~30 days, not verified per claim)',
+      qoderCanceled: 'The vendor withdrew this check-in reward',
       noteCodearts: 'default check-in 100/day, actual amount varies · 30-day plan cycle, written off at cycle end',
       codeartsExpired: 'Huawei Cloud credentials expired (access token lasts 2 hours); keep-alive renews it — wait a moment or sign in again in the CodeArts card',
       codeartsExpiredNoKeeper: 'Huawei Cloud credentials expired and keep-alive is off (renews every 2 hours) — sign in again in the CodeArts card',
@@ -266,7 +285,10 @@ window.__ModuleLoader__.load({
       { id: 'workbuddyglobal', label: 'WorkBuddy 国际服', kind: 'http', needs: 'dsh-connect-workbuddy', region: 'global', detailUrl: 'https://www.workbuddy.ai', note: 'noteWorkbuddyGlobal', defaultHidden: true },
       { id: 'codearts', label: 'CodeArts (华为云)', kind: 'http', needs: 'dsh-codearts', detailUrl: 'https://codearts.huaweicloud.com/portal/settings/personal-usage?locale=zh-cn', note: 'noteCodearts' },
       { id: 'qodercn', label: 'Qoder 中国', provider: 'qodercn', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.cn/account/usage', note: 'noteQoder' },
-      { id: 'qoder', label: 'Qoder 国际服', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoder' },
+      // 2026-11-19 实测 + 2026-11-20 用户确认：国际服的每日登录奖励已被官方下线
+      // （活动列表里没有 CLAIM_BENEFIT，`addOnQuota.used` 长期为 0，−100 是过期不是消耗）。
+      // 这行默认隐藏，但不删：入口还在「已隐藏」里，官方哪天恢复，取消隐藏即可。
+      { id: 'qoder', label: 'Qoder 国际服', provider: 'qoder', kind: 'pack', needs: 'dsh-our-free-model', refreshHourUtc8: 10, detailUrl: 'https://qoder.com/account/usage', note: 'noteQoderGlobal', defaultHidden: true },
       { id: 'raccoon', label: 'Raccoon (商汤)', provider: 'raccoon', kind: 'pack', needs: 'dsh-our-free-model', claim: 'link', link: 'https://xiaohuanxiong.com/work/home', dailyQuota: 300, dailyNote: 'valid7d', dailyValidDays: 7, detailUrl: 'https://xiaohuanxiong.com/work/home', note: 'noteRaccoon' },
       { id: 'trae', label: 'Trae (CN)', kind: 'trae', needs: 'dsh-connect-trae', region: 'cn', detailUrl: 'https://www.trae.cn', note: 'noteTrae' },
       { id: 'trae-global', label: 'Trae 国际版', kind: 'trae', needs: 'dsh-connect-trae', region: 'ai', detailUrl: 'https://www.trae.ai', note: 'noteTraeGlobal', defaultHidden: true, claim: 'none' },
@@ -517,7 +539,7 @@ window.__ModuleLoader__.load({
      */
     function dailyMoveOf(history, platformId, ledger, accountId) {
       const local = ledgerEntryOf(ledger, platformId, accountId)
-      if (local && typeof local.delta === 'number') return { delta: local.delta, source: 'ledger' }
+      const ledgerDelta = local && typeof local.delta === 'number' ? local.delta : undefined
       const entries = (history && history[platformId]) || []
       const today = todayKey()
       let todayEntry = null
@@ -527,21 +549,41 @@ window.__ModuleLoader__.load({
         if (entry.date === today) todayEntry = entry
         else previousEntry = entry
       }
-      if (!todayEntry) return { delta: undefined, source: '' }
       // The baseline is "the balance at the start of today". The last reading from
       // an earlier day is that value — it is the observation closest to midnight.
       // Today's own first reading is a *worse* baseline: if the grant happened
       // before the panel was opened (Raccoon: 6186 → 6486, first = 6486), the first
       // reading already contains the grant and the comparison says "no change".
-      const baseline = previousEntry && typeof previousEntry.total === 'number'
-        ? previousEntry.total
-        : (typeof todayEntry.first === 'number' ? todayEntry.first : undefined)
-      if (typeof baseline !== 'number') return { delta: undefined, source: '' }
-      // `peak` is the highest reading of today, so "it went up and was spent again"
-      // still counts as arrived; `net` is what the row shows, since that is the
-      // number a person actually compares.
-      const peak = typeof todayEntry.max === 'number' ? todayEntry.max : todayEntry.total
-      return { delta: peak - baseline, net: todayEntry.total - baseline, source: 'history' }
+      let historyDelta
+      if (todayEntry) {
+        const baseline = previousEntry && typeof previousEntry.total === 'number'
+          ? previousEntry.total
+          : (typeof todayEntry.first === 'number' ? todayEntry.first : undefined)
+        if (typeof baseline === 'number') {
+          // `peak` is the highest reading of today, so "it went up and was spent
+          // again" still counts as arrived.
+          const peak = typeof todayEntry.max === 'number' ? todayEntry.max : todayEntry.total
+          historyDelta = peak - baseline
+        }
+      }
+      // Both sources can be right at once and the larger one is the fuller answer:
+      // the ledger only knows the claims this panel performed (one +100), while the
+      // snapshot also sees a claim made in the vendor's own client. Reporting the
+      // ledger alone would hide the rest.
+      if (ledgerDelta !== undefined && historyDelta !== undefined) {
+        // A positive reading from either side wins; when neither is positive the
+        // snapshot is the richer answer — `Math.max(0, -100)` would report "flat"
+        // for a day that actually shrank by 100.
+        const delta = (ledgerDelta > 0 || historyDelta > 0)
+          ? Math.max(ledgerDelta, historyDelta)
+          : historyDelta
+        return { delta, net: historyDelta, source: 'both' }
+      }
+      if (ledgerDelta !== undefined) return { delta: ledgerDelta, source: 'ledger' }
+      if (historyDelta !== undefined) {
+        return { delta: historyDelta, net: historyDelta, source: 'history' }
+      }
+      return { delta: undefined, source: '' }
     }
 
     /** Provider-level check-in verdict taken from today's auto-check-in sentence. */
@@ -579,18 +621,30 @@ window.__ModuleLoader__.load({
      * 今日已发放 for days on end while the channel had no check-in at all.
      */
     /**
-     * Whether *anything at all* was observed about today for this account.
+     * Whether what we saw about today is **strong enough to conclude anything**.
      *
-     * Separate question from "did it arrive", and the one a fresh install trips
-     * over: with no stored baseline there is nothing to compare, so the honest
-     * answer is 待确认 — not 未发放. Saying the latter asserts a fact the panel
-     * never saw.
+     * A flat or falling net balance is NOT such evidence. Between two readings a
+     * day can gain 100 and lose 100 again — the daily pack expires while a new one
+     * lands (Qoder keeps N days of them, each worth a day's grant) — and the total
+     * comes back unchanged. Raccoon's week of packs behaves the same way. Treating
+     * "net 0" as "nothing arrived" asserts a fact nobody observed, so it is
+     * excluded here and the row falls back to 待确认.
+     *
+     * A real increase, an inferred grant date, a claim this panel performed, or an
+     * explicit upstream verdict all stay: each of those is a positive observation,
+     * not an arithmetic coincidence.
      */
     function hasEvidenceOf(row, seed, ledger, history, auto) {
       const move = dailyMoveOf(history, seed.id, ledger, row.accountId)
-      if (typeof move.delta === 'number') return true
+      if (typeof move.delta === 'number' && move.delta > 0) return true
       if (typeof row.dailyGrantedMs === 'number') return true
-      if (ledgerEntryOf(ledger, seed.id, row.accountId)) return true
+      // Only a claim that actually landed (or was answered "already claimed")
+      // counts. A ledger row with `inactive`/`failed` records that the vendor gave
+      // us nothing to claim — it says nothing about whether a grant arrived by some
+      // other route, and treating it as proof is how "no campaign here" became
+      // "did not arrive".
+      const local = ledgerEntryOf(ledger, seed.id, row.accountId)
+      if (local && (local.outcome === 'claimed' || local.outcome === 'already-claimed')) return true
       if (row.statusKnown && row.checkedIn !== undefined) return true
       if (providerCheckOf(seed, auto) !== null) return true
       return false
@@ -1464,11 +1518,15 @@ window.__ModuleLoader__.load({
       if (platform.kind === 'pack') {
         const value = await packRpc('credits.claimAll', { provider: platform.provider }, 120000)
         const results = (value && value.results) || []
+        // Carry the raw reply out for the store: when a provider answers "no
+        // activity to claim", the campaign list in here is the only evidence of
+        // *why*, and it never reached any log before.
+        const raw = value && typeof value === 'object' ? value : value
         if (account) {
           const hit = results.find((row) => row.accountId === account.accountId)
           const outcome = hit && hit.outcome ? hit.outcome : null
-          if (!outcome) return { message: 'claimed', rows: [{ accountId: account.accountId, kind: 'claimed' }] }
-          return { message: outcome.message || outcome.kind, rows: [{ accountId: hit.accountId, kind: outcome.kind }] }
+          if (!outcome) return { message: 'claimed', rows: [{ accountId: account.accountId, kind: 'claimed' }], raw }
+          return { message: outcome.message || outcome.kind, rows: [{ accountId: hit.accountId, kind: outcome.kind }], raw }
         }
         return {
           message: results.length === 0
@@ -1478,6 +1536,7 @@ window.__ModuleLoader__.load({
             accountId: row.accountId,
             kind: (row.outcome && row.outcome.kind) || 'claimed',
           })),
+          raw,
         }
       }
       if (platform.id === 'workbuddy' || platform.id === 'workbuddyglobal') {
@@ -1914,16 +1973,30 @@ window.__ModuleLoader__.load({
           const beforeRead = await refresh(id, false, true)
           const before = creditOf(beforeRead, account)
           const result = await claimPlatform(seed, account)
+          if (result && result.raw !== undefined && result.raw !== null) {
+            try {
+              persistToHost({ raw: { [id + ':claim']: JSON.stringify(result.raw).slice(0, 4000) } })
+            } catch { /* diagnosis only */ }
+          }
+          // An upstream can answer with a verdict that has nothing left to settle:
+          // "no activity to claim" (Qoder), "already claimed today", or a hard
+          // failure. Only an accepted claim can still turn into a balance change,
+          // so only then is the 6-second polling window worth spending — otherwise
+          // the user watches a spinner for a conclusion already given.
+          const immediateOutcome = (result.rows && result.rows[0] && result.rows[0].kind) || 'unknown'
+          const worthWaiting = immediateOutcome === 'claimed' || immediateOutcome === 'unknown'
           let after
           let delta
-          const settleBy = Date.now() + CLAIM_SETTLE_TOTAL_MS
-          while (Date.now() < settleBy) {
-            await new Promise((resolve) => setTimeout(resolve, CLAIM_SETTLE_STEP_MS))
-            const read = await refresh(id, false, true)
-            after = creditOf(read, account)
-            if (before === undefined || after === undefined) { delta = undefined; continue }
-            delta = after - before
-            if (delta > 0) break
+          if (worthWaiting) {
+            const settleBy = Date.now() + CLAIM_SETTLE_TOTAL_MS
+            while (Date.now() < settleBy) {
+              await new Promise((resolve) => setTimeout(resolve, CLAIM_SETTLE_STEP_MS))
+              const read = await refresh(id, false, true)
+              after = creditOf(read, account)
+              if (before === undefined || after === undefined) { delta = undefined; continue }
+              delta = after - before
+              if (delta > 0) break
+            }
           }
           const fallbackOutcome = (result.rows && result.rows[0] && result.rows[0].kind) || 'unknown'
           const rows = (result.rows && result.rows.length > 0)
@@ -1936,7 +2009,16 @@ window.__ModuleLoader__.load({
                 : { date: todayKey(), rows: {} }
               for (const row of rows) {
                 base.rows[id + '|' + row.accountId] = {
-                  at: Date.now(), before, after, delta, outcome: row.kind || fallbackOutcome,
+                  at: Date.now(),
+                  before,
+                  // When the upstream gave a verdict that needed no settlement, the
+                  // balance was not re-read: record it as unchanged rather than
+                  // leaving `after`/`delta` undefined, which reads like "never
+                  // measured" and forces every later check back onto weaker
+                  // evidence.
+                  after: after === undefined ? before : after,
+                  delta: delta === undefined ? 0 : delta,
+                  outcome: row.kind || fallbackOutcome,
                 }
               }
               saveLedger(base)
@@ -1944,16 +2026,25 @@ window.__ModuleLoader__.load({
             })
           }
           const verified = typeof delta === 'number' && delta > 0
-          // Three endings, not two: a measured increase (proof), an upstream
-          // that says the day was already claimed (nothing was owed), and a
-          // claim the upstream accepted whose credits have not posted inside
-          // the window. The last is a delay, and is worded as one — a closed
-          // window is not evidence that the claim failed.
+          // Four endings, not two. Only an accepted-but-unsettled claim is a delay.
+          // "inactive" and "failed" are conclusions the upstream already reached,
+          // and reporting them as 延迟超时 claimed a slow settlement that was never
+          // pending — Qoder's "当前没有可领取的活动" has been shown as "延迟超时",
+          // which reads as an outage rather than "nothing to claim today".
+          // Qoder 国际服的结局要单独说：官方已经把每日登录奖励下线了（2026-11-19
+          // 实测、2026-11-20 用户确认），而上游对点击的回应仍是「当前没有可领取的
+          // 活动」——那句话读起来像插件漏签。只改写文案，不拦截调用：官方若恢复
+          // 活动，会走回上面的 claimed 分支，这段自然失效。
+          const vendorCanceled = seed.id === 'qoder' && fallbackOutcome === 'inactive'
           const notice = verified
             ? '+' + delta
-            : (fallbackOutcome === 'already-claimed'
-              ? 'already-claimed'
-              : 'delayed:' + (result.message || fallbackOutcome))
+            : vendorCanceled
+              ? VENDOR_CANCELED
+              : (fallbackOutcome === 'already-claimed'
+                ? 'already-claimed'
+                : (fallbackOutcome === 'inactive' || fallbackOutcome === 'failed')
+                  ? (result.message || fallbackOutcome)
+                  : 'delayed:' + (result.message || fallbackOutcome))
           setPlatforms((current) => ({ ...current, [id]: { ...current[id], claiming: false, notice } }))
         } catch (error) {
           const message = String((error && error.message) || error)
@@ -2148,13 +2239,14 @@ window.__ModuleLoader__.load({
                 : (state.notice.slice(0, 8) === 'delayed:' ? S.warn : S.muted)),
           }, state.notice.charAt(0) === '+' ? state.notice
             : (state.notice === 'already-claimed' ? t('alreadyClaimed')
-              : (state.notice.slice(0, 8) === 'delayed:'
-                ? t('claimDelayed') + ' · ' + state.notice.slice(8)
-                : state.notice))),
+              : (state.notice === VENDOR_CANCELED ? t('qoderCanceled')
+                : (state.notice.slice(0, 8) === 'delayed:'
+                  ? t('claimDelayed') + ' · ' + state.notice.slice(8)
+                  : state.notice)))),
         ) : null,
         collapsed ? null : h('div', { style: S.rows },
           accounts.length === 0
-            ? h('div', { style: { ...S.row, ...S.rowFirst } }, h('span', { style: S.muted }, t('noAccount')))
+            ? h('div', { style: { ...S.row, ...S.rowFirst } }, h('span', { style: S.muted }, noAccountText(seed, t)))
             : accounts.map((row, index) => h(AccountLine, {
                 key: row.accountId + ':' + index,
                 seed, row, t, state, index, onClaim, providerChecked, pending, auto,
@@ -2300,6 +2392,21 @@ window.__ModuleLoader__.load({
               }, state.claiming ? t('claiming') : t('claim'))
             })(),
       )
+    }
+
+    /**
+     * One line for a platform that answered with zero accounts. When the row is
+     * read through a third-party plugin, the place to fix it is that plugin's
+     * own settings — saying only "没有账号" sends the user hunting in the wrong
+     * panel. A row whose package is missing never reaches here: it renders the
+     * MissingDeps card instead, which already names the package.
+     */
+    function noAccountText(seed, t) {
+      if (seed.needs) {
+        return t('noAccountBindPrefix') + ' ' + seed.needs + ' ' + t('noAccountBindSuffix')
+      }
+      if (seed.kind === 'mobileclaw') return t('noAccountMobileclaw')
+      return t('noAccount')
     }
 
     /**
@@ -2588,7 +2695,7 @@ window.__ModuleLoader__.load({
         h('div', { style: S.headRow },
           h('div', null,
             h('h1', { style: S.title }, t('title')),
-            h('p', { style: S.subtitle }, t('subtitle') + '  ·  v5')
+            h('p', { style: S.subtitle }, t('subtitle') + '  ·  v6')
           ),
           h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } },
             /**
